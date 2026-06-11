@@ -1,8 +1,13 @@
 import axios from 'axios';
 import { useAuthStore } from '../store/authStore';
 
+let baseUrl = import.meta.env.VITE_API_URL || '/api/v1';
+if (baseUrl.startsWith('http') && !baseUrl.endsWith('/api/v1')) {
+  baseUrl = baseUrl.replace(/\/$/, '') + '/api/v1';
+}
+
 const api = axios.create({
-  baseURL: import.meta.env.VITE_API_URL || '/api/v1',
+  baseURL: baseUrl,
   headers: { 'Content-Type': 'application/json' }
 });
 
