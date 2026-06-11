@@ -423,40 +423,50 @@ export default function GDRoomPage() {
       toast.error('Text-to-speech (TTS) is not supported by your browser.');
       return;
     }
-    const voices = synth.getVoices();
-    console.log('--- Speech Synthesis Debug Info ---');
-    console.log('Voices available:', voices.length);
-    voices.forEach((v, i) => console.log(`[${i}] ${v.name} (${v.lang}) - default: ${v.default}`));
 
-    if (voices.length === 0) {
-      toast.error('No speech voices found on your system! If on Linux Mint, try installing speech-dispatcher: "sudo apt install speech-dispatcher" then restart your browser.', { duration: 8000 });
-      return;
-    }
+    const runTest = (voices) => {
+      console.log('--- Speech Synthesis Debug Info ---');
+      console.log('Voices available:', voices.length);
+      voices.forEach((v, i) => console.log(`[${i}] ${v.name} (${v.lang}) - default: ${v.default}`));
 
-    try {
-      synth.cancel();
-      const utterance = new SpeechSynthesisUtterance("Audio output is working correctly!");
-      utterance.rate = 1.0;
-      utterance.pitch = 1.0;
-      utterance.volume = 1.0;
-      
-      const enVoices = voices.filter(v => v.lang.startsWith('en'));
-      if (enVoices.length > 0) {
-        utterance.voice = enVoices[0];
-      } else {
-        utterance.voice = voices[0];
+      if (voices.length === 0) {
+        toast.error('No speech voices found. TTS will be disabled but the GD session will still work normally.', { duration: 5000 });
+        return;
       }
 
-      utterance.onstart = () => {
-        toast.success(`Playing sound using voice: ${utterance.voice?.name || 'default'}`);
-      };
-      utterance.onerror = (e) => {
-        toast.error(`TTS Speech Error: ${e.error}`);
-      };
+      try {
+        synth.cancel();
+        const utterance = new SpeechSynthesisUtterance("Audio output is working correctly!");
+        utterance.rate = 1.0;
+        utterance.pitch = 1.0;
+        utterance.volume = 1.0;
 
-      synth.speak(utterance);
-    } catch (err) {
-      toast.error(`TTS trigger failed: ${err.message}`);
+        const enVoices = voices.filter(v => v.lang.startsWith('en'));
+        utterance.voice = enVoices.length > 0 ? enVoices[0] : voices[0];
+
+        utterance.onstart = () => {
+          toast.success(`Playing sound using voice: ${utterance.voice?.name || 'default'}`);
+        };
+        utterance.onerror = (e) => {
+          toast.error(`TTS Speech Error: ${e.error}`);
+        };
+
+        synth.speak(utterance);
+      } catch (err) {
+        toast.error(`TTS trigger failed: ${err.message}`);
+      }
+    };
+
+    const voices = synth.getVoices();
+    if (voices.length === 0) {
+      synth.addEventListener('voiceschanged', () => runTest(synth.getVoices()), { once: true });
+      setTimeout(() => {
+        if (synth.getVoices().length === 0) {
+          toast('No speech voices loaded yet. TTS will be disabled but the GD session works fine without it.', { icon: 'ℹ️', duration: 5000 });
+        }
+      }, 3000);
+    } else {
+      runTest(voices);
     }
   };
 
