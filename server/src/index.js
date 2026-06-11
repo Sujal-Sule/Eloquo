@@ -73,6 +73,10 @@ app.use('/api/v1/reports', reportRoutes);
 app.use('/api/v1/leaderboard', leaderboardRoutes);
 app.use('/api/v1/achievements', achievementRoutes);
 
+app.get('/health', (req, res) => {
+  res.status(200).send('OK');
+});
+
 app.get('/api/v1/health', (req, res) => {
   res.json({ success: true, message: 'Eloquo API is running', env: process.env.NODE_ENV });
 });
