@@ -22,13 +22,28 @@ const httpServer = createServer(app);
 const PORT = process.env.PORT || 5000;
 const isProduction = process.env.NODE_ENV === 'production';
 
-const allowedOrigins = isProduction
-  ? [process.env.CLIENT_URL].filter(Boolean)
-  : [process.env.CLIENT_URL || 'http://localhost:5173'];
+const allowedOrigins = [
+  'http://localhost:5173',
+  'http://localhost:3000'
+];
+
+if (process.env.CLIENT_URL) {
+  allowedOrigins.push(process.env.CLIENT_URL.replace(/\/$/, ''));
+}
 
 app.use(cors({
   origin: (origin, callback) => {
-    if (!origin || allowedOrigins.includes(origin)) {
+    if (!origin) {
+      callback(null, true);
+      return;
+    }
+    const normalizedOrigin = origin.replace(/\/$/, '');
+    if (
+      allowedOrigins.includes(normalizedOrigin) ||
+      normalizedOrigin.endsWith('.vercel.app') ||
+      normalizedOrigin === 'https://eloquo.sujalsule.in' ||
+      normalizedOrigin === 'https://www.eloquo.sujalsule.in'
+    ) {
       callback(null, true);
     } else {
       callback(new Error('Not allowed by CORS'));
