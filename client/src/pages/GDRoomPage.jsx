@@ -140,17 +140,17 @@ export default function GDRoomPage() {
       return 'female';
     };
 
-    const doSpeak = () => {
+    const doSpeak = (voicesList) => {
       const info = PARTICIPANT_INFO[name] || { gender: 'female', pitch: 1.0, rate: 0.95, index: 0 };
       const utterance = new SpeechSynthesisUtterance(text);
       utterance.rate = info.rate;
       utterance.pitch = info.pitch;
       utterance.volume = 1;
 
-      const voices = synth.getVoices();
-      const enVoices = voices.filter(v => v.lang.startsWith('en'));
+      const enVoices = voicesList.filter(v => v.lang.startsWith('en'));
       
       if (enVoices.length > 0) {
+        enVoices.sort((a, b) => a.name.localeCompare(b.name));
         const maleVoices = enVoices.filter(v => getVoiceGender(v) === 'male');
         const femaleVoices = enVoices.filter(v => getVoiceGender(v) === 'female');
         if (info.gender === 'male' && maleVoices.length > 0) {
@@ -187,11 +187,19 @@ export default function GDRoomPage() {
       };
     };
 
-    if (synth.getVoices().length === 0) {
-      synth.addEventListener('voiceschanged', () => doSpeak(), { once: true });
-      synth.getVoices();
+    const loadedVoices = synth.getVoices();
+    if (loadedVoices.length < 5) {
+      const listener = () => {
+        synth.removeEventListener('voiceschanged', listener);
+        doSpeak(synth.getVoices());
+      };
+      synth.addEventListener('voiceschanged', listener);
+      setTimeout(() => {
+        synth.removeEventListener('voiceschanged', listener);
+        doSpeak(synth.getVoices());
+      }, 300);
     } else {
-      doSpeak();
+      doSpeak(loadedVoices);
     }
   }, []);
 
