@@ -424,13 +424,21 @@ export default function GDRoomPage() {
       return;
     }
 
-    const runTest = (voices) => {
-      console.log('--- Speech Synthesis Debug Info ---');
-      console.log('Voices available:', voices.length);
-      voices.forEach((v, i) => console.log(`[${i}] ${v.name} (${v.lang}) - default: ${v.default}`));
+    const isBrave = navigator.brave && navigator.brave.isBrave;
 
+    const runTest = (voices) => {
       if (voices.length === 0) {
-        toast.error('No speech voices found. TTS will be disabled but the GD session will still work normally.', { duration: 5000 });
+        if (isBrave) {
+          toast.error(
+            'Brave browser blocks TTS voices on deployed sites for privacy. Please use Chrome or Edge for voice features, or lower Brave Shields on this site.',
+            { duration: 8000 }
+          );
+        } else {
+          toast.error(
+            'No speech voices found on your system. Try using Chrome or Edge for TTS support.',
+            { duration: 6000 }
+          );
+        }
         return;
       }
 
@@ -462,7 +470,7 @@ export default function GDRoomPage() {
       synth.addEventListener('voiceschanged', () => runTest(synth.getVoices()), { once: true });
       setTimeout(() => {
         if (synth.getVoices().length === 0) {
-          toast('No speech voices loaded yet. TTS will be disabled but the GD session works fine without it.', { icon: 'ℹ️', duration: 5000 });
+          runTest([]);
         }
       }, 3000);
     } else {
