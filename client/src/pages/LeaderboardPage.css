@@ -1,0 +1,132 @@
+.leaderboard-header-pane {
+  margin-bottom: 36px;
+}
+.leaderboard-section-title {
+  font-family: var(--font-title);
+  font-size: 2.5rem;
+  font-weight: 400;
+  color: var(--text-primary);
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  letter-spacing: -0.5px;
+  margin-bottom: 6px;
+}
+.leaderboard-section-desc {
+  color: var(--text-secondary);
+  font-size: 0.95rem;
+}
+
+.my-rank-banner-editorial {
+  display: flex;
+  align-items: center;
+  padding: 0 4px;
+  margin-bottom: 40px;
+  gap: 36px;
+}
+.my-rank-separator {
+  width: 1px;
+  height: 36px;
+  background: var(--border-color);
+}
+.my-rank-col {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.my-rank-lbl {
+  font-size: 0.72rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  color: var(--text-muted);
+  letter-spacing: 0.5px;
+}
+.my-rank-val {
+  font-size: 1.4rem;
+  font-weight: 700;
+  color: var(--text-primary);
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.leaderboard-directory {
+  display: flex;
+  flex-direction: column;
+  border-top: 1px solid var(--border-color);
+}
+
+.leaderboard-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 20px 16px;
+  border-bottom: 1px solid var(--border-color);
+  transition: background var(--transition);
+}
+.leaderboard-row:hover {
+  background: var(--bg-secondary);
+}
+.leaderboard-row.is-current-user {
+  background: rgba(0, 0, 0, 0.02);
+  border-left: 2px solid var(--text-primary);
+  padding-left: 14px;
+}
+
+.lb-col-rank {
+  min-width: 48px;
+}
+.lb-medal {
+  font-size: 1.25rem;
+}
+.lb-num {
+  font-family: var(--font-title);
+  font-size: 1.1rem;
+  color: var(--text-muted);
+}
+
+.lb-col-info {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.lb-row-name {
+  font-size: 0.95rem;
+  font-weight: 700;
+  color: var(--text-primary);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.lb-self-tag {
+  font-size: 0.68rem;
+  font-weight: 700;
+  color: var(--text-muted);
+  background: var(--bg-secondary);
+  padding: 2px 6px;
+  border-radius: 4px;
+  border: 1px solid var(--border-color);
+}
+.lb-row-meta {
+  font-size: 0.78rem;
+  color: var(--text-muted);
+  font-weight: 600;
+}
+
+.lb-col-points {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.88rem;
+  font-weight: 700;
+  color: var(--text-primary);
+}
+
+@media (max-width: 600px) {
+  .my-rank-banner-editorial { gap: 20px; }
+  .my-rank-val { font-size: 1.1rem; }
+  .leaderboard-row { padding: 16px 8px; }
+  .lb-col-rank { min-width: 36px; }
+  .lb-row-name { font-size: 0.88rem; }
+}

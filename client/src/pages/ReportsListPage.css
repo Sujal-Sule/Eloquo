@@ -1,0 +1,111 @@
+.reports-header-pane {
+  margin-bottom: 36px;
+}
+.reports-section-title {
+  font-family: var(--font-title);
+  font-size: 2.5rem;
+  font-weight: 400;
+  color: var(--text-primary);
+  letter-spacing: -0.5px;
+  margin-bottom: 6px;
+}
+.reports-section-desc {
+  color: var(--text-secondary);
+  font-size: 0.95rem;
+}
+
+.reports-directory-list {
+  display: flex;
+  flex-direction: column;
+  border-top: 1px solid var(--border-color);
+}
+
+.reports-directory-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 24px 16px;
+  border-bottom: 1px solid var(--border-color);
+  text-decoration: none;
+  transition: all var(--transition);
+  background: transparent;
+}
+.reports-directory-row:hover {
+  background: var(--bg-secondary);
+  padding-left: 22px;
+  padding-right: 10px;
+}
+
+.rep-col-main {
+  display: flex;
+  align-items: flex-start;
+  gap: 24px;
+  flex: 1;
+}
+.rep-row-index {
+  font-family: var(--font-title);
+  font-size: 1.4rem;
+  font-weight: 400;
+  color: var(--text-muted);
+  min-width: 32px;
+  margin-top: 2px;
+}
+.rep-row-details {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.rep-row-topic {
+  font-size: 1.05rem;
+  font-weight: 700;
+  color: var(--text-primary);
+  line-height: 1.3;
+}
+.rep-row-meta {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+.meta-item {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.78rem;
+  color: var(--text-muted);
+  font-weight: 600;
+}
+
+.rep-col-score {
+  display: flex;
+  align-items: center;
+  gap: 20px;
+}
+.rep-score-capsule {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 12px;
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-md);
+  font-size: 0.88rem;
+  font-weight: 700;
+  background: var(--bg-secondary);
+}
+.rep-arrow-link {
+  color: var(--text-muted);
+  transition: transform var(--transition), color var(--transition);
+}
+.reports-directory-row:hover .rep-arrow-link {
+  transform: translateX(4px);
+  color: var(--text-primary);
+}
+
+@media (max-width: 768px) {
+  .reports-directory-row { padding: 18px 8px; }
+  .rep-col-main { gap: 12px; }
+  .rep-row-index { display: none; }
+  .rep-row-topic { font-size: 0.95rem; }
+  .rep-row-meta { gap: 10px; }
+  .rep-col-score { gap: 10px; }
+}
