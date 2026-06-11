@@ -116,42 +116,25 @@ export default function GDRoomPage() {
     synth.cancel();
 
     const PARTICIPANT_INFO = {
-      'Priya Sharma': { gender: 'female', index: 0 },
-      'Ananya Das': { gender: 'female', index: 1 },
-      'Arjun Mehta': { gender: 'male', index: 0 },
-      'Vikram Rao': { gender: 'male', index: 1 },
-      'Rohan Kapoor': { gender: 'male', index: 2 }
-    };
-
-    const getVoiceGender = (voice) => {
-      const vName = voice.name.toLowerCase();
-      if (vName.includes('+m') || vName.includes('male') || vName.includes('man') || vName.includes('david') || vName.includes('george') || vName.includes('ravi') || vName.includes('guy') || vName.includes('boy')) {
-        return 'male';
-      }
-      if (vName.includes('+f') || vName.includes('female') || vName.includes('woman') || vName.includes('zira') || vName.includes('hazel') || vName.includes('susan') || vName.includes('heera') || vName.includes('girl')) {
-        return 'female';
-      }
-      return 'female';
+      'Zara Iyer': { gender: 'female', pitch: 1.15, rate: 0.92, index: 0 },
+      'Aisha Nair': { gender: 'female', pitch: 1.1, rate: 0.95, index: 1 },
+      'Kabir Verma': { gender: 'male', pitch: 0.8, rate: 0.95, index: 0 },
+      'Reyansh Joshi': { gender: 'male', pitch: 0.85, rate: 0.9, index: 1 },
+      'Rudra Thakur': { gender: 'male', pitch: 0.75, rate: 1.0, index: 2 }
     };
 
     const doSpeak = () => {
+      const info = PARTICIPANT_INFO[name] || { gender: 'female', pitch: 1.0, rate: 0.95, index: 0 };
       const utterance = new SpeechSynthesisUtterance(text);
-      utterance.rate = 0.95;
-      utterance.pitch = 1;
+      utterance.rate = info.rate;
+      utterance.pitch = info.pitch;
       utterance.volume = 1;
 
       const voices = synth.getVoices();
       const enVoices = voices.filter(v => v.lang.startsWith('en'));
       
       if (enVoices.length > 0) {
-        const info = PARTICIPANT_INFO[name] || { gender: 'female', index: 0 };
-        const matchedVoices = enVoices.filter(v => getVoiceGender(v) === info.gender);
-        
-        if (matchedVoices.length > 0) {
-          utterance.voice = matchedVoices[info.index % matchedVoices.length];
-        } else {
-          utterance.voice = enVoices[info.index % enVoices.length];
-        }
+        utterance.voice = enVoices[info.index % enVoices.length];
       }
 
       utterance.onstart = () => {

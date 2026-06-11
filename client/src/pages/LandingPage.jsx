@@ -10,9 +10,9 @@ export default function LandingPage() {
   const [expandedTopic, setExpandedTopic] = useState(null);
 
   const demoMessages = [
-    { name: 'AI Moderator', role: 'moderator', text: 'Welcome to this group discussion session. Today\'s topic is: "Is AI replacing human jobs or creating new opportunities?" Let\'s begin.' },
-    { name: 'Rohan Kapoor', role: 'analyst', text: 'I believe AI will primarily automate repetitive tasks, which actually frees up human capital to focus on strategic and creative positions.' },
-    { name: 'Priya Sharma', role: 'challenger', text: 'While that sounds ideal, the displacement rate is currently outstripping the creation of new roles. Millions of workers face a transition bottleneck.' },
+    { name: 'Reyansh Joshi', role: 'moderator', text: 'Welcome to this group discussion session. Today\'s topic is: "Is AI replacing human jobs or creating new opportunities?" Let\'s begin.' },
+    { name: 'Zara Iyer', role: 'analyst', text: 'I believe AI will primarily automate repetitive tasks, which actually frees up human capital to focus on strategic and creative positions.' },
+    { name: 'Kabir Verma', role: 'challenger', text: 'While that sounds ideal, the displacement rate is currently outstripping the creation of new roles. Millions of workers face a transition bottleneck.' },
     { name: 'You (User)', role: 'user', text: 'Both points are valid. However, the solution lies in human-AI collaboration. The most valuable skill in the future will be AI orchestration.' }
   ];
 
