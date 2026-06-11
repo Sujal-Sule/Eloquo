@@ -116,11 +116,36 @@ export default function GDRoomPage() {
     synth.cancel();
 
     const PARTICIPANT_INFO = {
-      'Zara Iyer': { gender: 'female', pitch: 1.15, rate: 0.92, index: 0 },
-      'Aisha Nair': { gender: 'female', pitch: 1.1, rate: 0.95, index: 1 },
-      'Kabir Verma': { gender: 'male', pitch: 0.85, rate: 0.95, index: 0 },
-      'Reyansh Joshi': { gender: 'male', pitch: 0.9, rate: 0.9, index: 1 },
-      'Rudra Thakur': { gender: 'male', pitch: 0.75, rate: 1.0, index: 2 }
+      'Zara Iyer': {
+        gender: 'female',
+        pitch: 1.0,
+        rate: 0.90,
+        preferred: ['google india english female', 'zira', 'female', 'english']
+      },
+      'Aisha Nair': {
+        gender: 'female',
+        pitch: 1.25,
+        rate: 0.95,
+        preferred: ['google us english female', 'zira', 'female', 'english']
+      },
+      'Kabir Verma': {
+        gender: 'male',
+        pitch: 1.15,
+        rate: 0.9,
+        preferred: ['google uk english male', 'david', 'male', 'english']
+      },
+      'Reyansh Joshi': {
+        gender: 'male',
+        pitch: 1.0,
+        rate: 1.05,
+        preferred: ['google uk english male', 'david', 'male', 'english']
+      },
+      'Rudra Thakur': {
+        gender: 'male',
+        pitch: 0.70,
+        rate: 1.0,
+        preferred: ['google uk english male', 'david', 'male', 'english']
+      }
     };
 
     const getVoiceGender = (voice) => {
@@ -140,9 +165,20 @@ export default function GDRoomPage() {
       return 'female';
     };
 
+    const cleanPronunciation = (str) => {
+      if (!str) return '';
+      return str
+        .replace(/\bKabir\b/g, 'Ka-beer')
+        .replace(/\bRudra\b/g, 'Roodra')
+        .replace(/\bZara\b/g, 'Zaara')
+        .replace(/\bAisha\b/g, 'Ayesha')
+        .replace(/\bReyansh\b/g, 'Rayaansh');
+    };
+
     const doSpeak = (voicesList) => {
-      const info = PARTICIPANT_INFO[name] || { gender: 'female', pitch: 1.0, rate: 0.95, index: 0 };
-      const utterance = new SpeechSynthesisUtterance(text);
+      const info = PARTICIPANT_INFO[name] || { gender: 'female', pitch: 1.0, rate: 1.0, preferred: ['english'] };
+      const cleanedText = cleanPronunciation(text);
+      const utterance = new SpeechSynthesisUtterance(cleanedText);
       utterance.rate = info.rate;
       utterance.pitch = info.pitch;
       utterance.volume = 1;
@@ -150,16 +186,16 @@ export default function GDRoomPage() {
       const enVoices = voicesList.filter(v => v.lang.startsWith('en'));
       
       if (enVoices.length > 0) {
-        enVoices.sort((a, b) => a.name.localeCompare(b.name));
-        const maleVoices = enVoices.filter(v => getVoiceGender(v) === 'male');
-        const femaleVoices = enVoices.filter(v => getVoiceGender(v) === 'female');
-        if (info.gender === 'male' && maleVoices.length > 0) {
-          utterance.voice = maleVoices[info.index % maleVoices.length];
-        } else if (info.gender === 'female' && femaleVoices.length > 0) {
-          utterance.voice = femaleVoices[info.index % femaleVoices.length];
-        } else {
-          utterance.voice = enVoices[info.index % enVoices.length];
+        let selectedVoice = null;
+        for (const pref of info.preferred) {
+          selectedVoice = enVoices.find(v => v.name.toLowerCase().includes(pref));
+          if (selectedVoice) break;
         }
+        if (!selectedVoice) {
+          const genderMatches = enVoices.filter(v => getVoiceGender(v) === info.gender);
+          selectedVoice = genderMatches.length > 0 ? genderMatches[0] : enVoices[0];
+        }
+        utterance.voice = selectedVoice;
       }
 
       utterance.onstart = () => {
@@ -188,7 +224,9 @@ export default function GDRoomPage() {
     };
 
     const loadedVoices = synth.getVoices();
-    if (loadedVoices.length < 5) {
+    const hasGoogle = loadedVoices.some(v => v.name.toLowerCase().includes('google'));
+    
+    if (loadedVoices.length < 5 || (!hasGoogle && navigator.onLine)) {
       const listener = () => {
         synth.removeEventListener('voiceschanged', listener);
         doSpeak(synth.getVoices());
@@ -197,7 +235,7 @@ export default function GDRoomPage() {
       setTimeout(() => {
         synth.removeEventListener('voiceschanged', listener);
         doSpeak(synth.getVoices());
-      }, 300);
+      }, 1000);
     } else {
       doSpeak(loadedVoices);
     }
