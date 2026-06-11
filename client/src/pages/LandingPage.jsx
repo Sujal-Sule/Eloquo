@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { Link } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { MessageSquare, ArrowRight, Play, Sparkles, Clock, ChevronDown, ChevronUp } from 'lucide-react';
@@ -16,12 +16,27 @@ export default function LandingPage() {
     { name: 'You (User)', role: 'user', text: 'Both points are valid. However, the solution lies in human-AI collaboration. The most valuable skill in the future will be AI orchestration.' }
   ];
 
+  const chatContainerRef = useRef(null);
+
   useEffect(() => {
     const interval = setInterval(() => {
       setDemoStep((prev) => (prev < demoMessages.length - 1 ? prev + 1 : 0));
     }, 4500);
     return () => clearInterval(interval);
   }, []);
+
+  useEffect(() => {
+    if (chatContainerRef.current) {
+      if (demoStep === 0) {
+        chatContainerRef.current.scrollTop = 0;
+      } else {
+        chatContainerRef.current.scrollTo({
+          top: chatContainerRef.current.scrollHeight,
+          behavior: 'smooth'
+        });
+      }
+    }
+  }, [demoStep]);
 
   const topicsShowcase = {
     tech: [
@@ -155,7 +170,7 @@ export default function LandingPage() {
       <nav className="landing-nav">
         <div className="landing-nav-inner">
           <div className="landing-brand">
-            <img src="/logo.svg" alt="Eloquo" className="landing-logo" style={{ width: '130px', height: '130px', margin: '-45px 0' }} />
+            <img src="/logo.svg" alt="Eloquo" className="landing-logo" style={{ width: '190px', height: '105px', margin: '-45px 0' }} />
           </div>
           <div className="landing-nav-links">
             <Link to="/login" className="btn btn-ghost">Log In</Link>
@@ -207,30 +222,27 @@ export default function LandingPage() {
             <span className="demo-title-text">Live Simulator Preview</span>
             <button className="demo-reset-btn" onClick={() => setDemoStep(0)}>Reset Demo</button>
           </div>
-          <div className="demo-messages-list">
-            <AnimatePresence mode="popLayout">
-              {demoMessages.slice(0, demoStep + 1).map((msg, i) => (
-                <motion.div 
-                  key={i} 
-                  className={`demo-msg-item msg-${msg.role}`}
-                  initial={{ opacity: 0, x: msg.role === 'user' ? 20 : -20, y: 10 }}
-                  animate={{ opacity: 1, x: 0, y: 0 }}
-                  exit={{ opacity: 0 }}
-                  transition={{ type: 'spring', stiffness: 260, damping: 22 }}
-                >
-                  <div className="demo-msg-avatar">
-                    {msg.name[0]}
+          <div className="demo-messages-list" ref={chatContainerRef}>
+            {demoMessages.slice(0, demoStep + 1).map((msg, i) => (
+              <motion.div 
+                 key={i} 
+                className={`demo-msg-item msg-${msg.role}`}
+                initial={{ opacity: 0, x: msg.role === 'user' ? 20 : -20, y: 10 }}
+                animate={{ opacity: 1, x: 0, y: 0 }}
+                transition={{ type: 'spring', stiffness: 260, damping: 22 }}
+              >
+                <div className="demo-msg-avatar">
+                  {msg.name[0]}
+                </div>
+                <div className="demo-msg-body">
+                  <div className="demo-msg-meta">
+                    <span className="demo-msg-name">{msg.name}</span>
+                    <span className="demo-msg-role-tag">{msg.role}</span>
                   </div>
-                  <div className="demo-msg-body">
-                    <div className="demo-msg-meta">
-                      <span className="demo-msg-name">{msg.name}</span>
-                      <span className="demo-msg-role-tag">{msg.role}</span>
-                    </div>
-                    <p className="demo-msg-text">{msg.text}</p>
-                  </div>
-                </motion.div>
-              ))}
-            </AnimatePresence>
+                  <p className="demo-msg-text">{msg.text}</p>
+                </div>
+              </motion.div>
+            ))}
             <div className="demo-typing-indicator">
               <span className="typing-dot"></span>
               <span className="typing-dot"></span>
