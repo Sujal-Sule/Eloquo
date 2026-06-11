@@ -118,9 +118,26 @@ export default function GDRoomPage() {
     const PARTICIPANT_INFO = {
       'Zara Iyer': { gender: 'female', pitch: 1.15, rate: 0.92, index: 0 },
       'Aisha Nair': { gender: 'female', pitch: 1.1, rate: 0.95, index: 1 },
-      'Kabir Verma': { gender: 'male', pitch: 0.8, rate: 0.95, index: 0 },
-      'Reyansh Joshi': { gender: 'male', pitch: 0.85, rate: 0.9, index: 1 },
+      'Kabir Verma': { gender: 'male', pitch: 0.85, rate: 0.95, index: 0 },
+      'Reyansh Joshi': { gender: 'male', pitch: 0.9, rate: 0.9, index: 1 },
       'Rudra Thakur': { gender: 'male', pitch: 0.75, rate: 1.0, index: 2 }
+    };
+
+    const getVoiceGender = (voice) => {
+      const vName = voice.name.toLowerCase();
+      if (
+        vName.includes('male') ||
+        vName.includes('david') ||
+        vName.includes('george') ||
+        vName.includes('ravi') ||
+        vName.includes('guy') ||
+        vName.includes('boy') ||
+        vName.includes('mark') ||
+        (vName.includes('natural') && (vName.includes('guy') || vName.includes('ryan') || vName.includes('andrew') || vName.includes('brian')))
+      ) {
+        return 'male';
+      }
+      return 'female';
     };
 
     const doSpeak = () => {
@@ -134,7 +151,15 @@ export default function GDRoomPage() {
       const enVoices = voices.filter(v => v.lang.startsWith('en'));
       
       if (enVoices.length > 0) {
-        utterance.voice = enVoices[info.index % enVoices.length];
+        const maleVoices = enVoices.filter(v => getVoiceGender(v) === 'male');
+        const femaleVoices = enVoices.filter(v => getVoiceGender(v) === 'female');
+        if (info.gender === 'male' && maleVoices.length > 0) {
+          utterance.voice = maleVoices[info.index % maleVoices.length];
+        } else if (info.gender === 'female' && femaleVoices.length > 0) {
+          utterance.voice = femaleVoices[info.index % femaleVoices.length];
+        } else {
+          utterance.voice = enVoices[info.index % enVoices.length];
+        }
       }
 
       utterance.onstart = () => {
