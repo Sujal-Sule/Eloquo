@@ -1,4 +1,5 @@
 import GDSession from '../models/GDSession.js';
+import genAI from '../config/gemini.js';
 import UserStats from '../models/UserStats.js';
 import PerformanceReport from '../models/PerformanceReport.js';
 import Achievement from '../models/Achievement.js';
@@ -10,6 +11,11 @@ export const createSession = async (req, res) => {
   try {
     const { topic, customTopic, difficulty, duration, participantCount, startMode, personalities } = req.body;
     const userId = req.user._id;
+
+    await GDSession.updateMany(
+      { userId, status: 'active' },
+      { $set: { status: 'completed', endedAt: new Date() } }
+    );
 
     const sessionTopic = customTopic || topic;
     if (!sessionTopic) {
@@ -78,7 +84,24 @@ export const getSession = async (req, res) => {
     if (!session) {
       return res.status(404).json({ success: false, message: 'Session not found' });
     }
-    res.json({ success: true, data: { session } });
+    let lastMessageAudio = null;
+    if (session.messages && session.messages.length > 0) {
+      const lastMsg = session.messages[session.messages.length - 1];
+      if (lastMsg.speakerType === 'ai') {
+        try {
+          lastMessageAudio = await synthesizeAudio(lastMsg.message, lastMsg.speakerName);
+        } catch (ttsErr) {
+          console.error(ttsErr);
+        }
+      }
+    }
+    res.json({
+      success: true,
+      data: {
+        session,
+        lastMessageAudio
+      }
+    });
   } catch (error) {
     res.status(500).json({ success: false, message: error.message });
   }
@@ -136,11 +159,24 @@ export const userSpeak = async (req, res) => {
     respondingAI.speakingTurns += 1;
     await session.save();
 
+    let audioData = null;
+    try {
+      audioData = await synthesizeAudio(aiResponse, respondingAI.name);
+    } catch (ttsErr) {
+      console.error(ttsErr);
+    }
+
     res.json({
       success: true,
       data: {
         userMessage: { speakerName: userParticipant.name, message: transcript },
-        aiResponse: { speakerName: respondingAI.name, message: aiResponse, personality: respondingAI.personality },
+        aiResponse: { 
+          speakerName: respondingAI.name, 
+          message: aiResponse, 
+          personality: respondingAI.personality,
+          audioContent: audioData?.audioContent || null,
+          mimeType: audioData?.mimeType || null
+        },
         passCount: session.passCount,
         maxPasses: session.maxPasses,
         userSpeakingTurns: session.userSpeakingTurns
@@ -187,6 +223,16 @@ export const passTurn = async (req, res) => {
 
     await session.save();
 
+    let audioData = null;
+    if (!isMandatory) {
+      const lastMsg = session.messages[session.messages.length - 1];
+      try {
+        audioData = await synthesizeAudio(lastMsg.message, lastMsg.speakerName);
+      } catch (ttsErr) {
+        console.error(ttsErr);
+      }
+    }
+
     res.json({
       success: true,
       data: {
@@ -194,7 +240,11 @@ export const passTurn = async (req, res) => {
         maxPasses: session.maxPasses,
         remainingPasses: session.maxPasses - session.passCount,
         mandatory: isMandatory,
-        newMessage: !isMandatory ? session.messages[session.messages.length - 1] : null
+        newMessage: !isMandatory ? {
+          ...session.messages[session.messages.length - 1].toObject(),
+          audioContent: audioData?.audioContent || null,
+          mimeType: audioData?.mimeType || null
+        } : null
       }
     });
   } catch (error) {
@@ -238,12 +288,21 @@ export const triggerAIResponse = async (req, res) => {
     respondingAI.speakingTurns += 1;
     await session.save();
 
+    let audioData = null;
+    try {
+      audioData = await synthesizeAudio(aiResponse, respondingAI.name);
+    } catch (ttsErr) {
+      console.error(ttsErr);
+    }
+
     res.json({
       success: true,
       data: {
         speaker: respondingAI.name,
         personality: respondingAI.personality,
-        message: aiResponse
+        message: aiResponse,
+        audioContent: audioData?.audioContent || null,
+        mimeType: audioData?.mimeType || null
       }
     });
   } catch (error) {
@@ -253,7 +312,7 @@ export const triggerAIResponse = async (req, res) => {
 
 export const endSession = async (req, res) => {
   try {
-    const { userConcluded } = req.body;
+    const { userConcluded, conclusionText } = req.body;
     const session = await GDSession.findById(req.params.sessionId);
     if (!session) {
       return res.status(404).json({ success: false, message: 'Session not found' });
@@ -264,12 +323,19 @@ export const endSession = async (req, res) => {
     session.userConcluded = userConcluded || false;
 
     if (userConcluded) {
+      const userParticipant = session.participants.find(p => p.participantType === 'user');
       session.messages.push({
-        speakerName: 'System',
-        speakerType: 'system',
-        message: `${req.user.name} concluded the discussion.`,
+        participantId: userParticipant?._id,
+        speakerName: req.user.name,
+        speakerType: 'user',
+        personality: 'user',
+        message: conclusionText || `${req.user.name} concluded the discussion.`,
         messageType: 'conclusion'
       });
+      session.userSpeakingTurns += 1;
+      if (userParticipant) {
+        userParticipant.speakingTurns += 1;
+      }
     } else {
       const moderator = session.participants.find(p => p.personality === 'moderator');
       const conclusion = await generateConclusionStatement({
@@ -427,6 +493,121 @@ export const getSessionHistory = async (req, res) => {
     const total = await GDSession.countDocuments({ userId: req.user._id, status: 'completed' });
     res.json({ success: true, data: { sessions, total, page: Number(page) } });
   } catch (error) {
+    res.status(500).json({ success: false, message: error.message });
+  }
+};
+
+const GEMINI_VOICES = {
+  'Zara Iyer': 'Aoede',
+  'Aisha Nair': 'Kore',
+  'Kabir Verma': 'Charon',
+  'Reyansh Joshi': 'Puck',
+  'Rudra Thakur': 'Fenrir'
+};
+
+const SARVAM_VOICES = {
+  'Zara Iyer': 'shreya',
+  'Aisha Nair': 'ishita',
+  'Kabir Verma': 'shubh',
+  'Reyansh Joshi': 'manan',
+  'Rudra Thakur': 'shubh'
+};
+
+function pcmToWav(pcmBuffer, sampleRate = 24000, numChannels = 1, bitsPerSample = 16) {
+  const header = Buffer.alloc(44);
+  const dataLength = pcmBuffer.length;
+  header.write('RIFF', 0);
+  header.writeUInt32LE(dataLength + 36, 4);
+  header.write('WAVE', 8);
+  header.write('fmt ', 12);
+  header.writeUInt32LE(16, 16);
+  header.writeUInt16LE(1, 20);
+  header.writeUInt16LE(numChannels, 22);
+  header.writeUInt32LE(sampleRate, 24);
+  header.writeUInt32LE((sampleRate * bitsPerSample * numChannels) / 8, 28);
+  header.writeUInt16LE((bitsPerSample * numChannels) / 8, 32);
+  header.writeUInt16LE(bitsPerSample, 34);
+  header.write('data', 36);
+  header.writeUInt32LE(dataLength, 40);
+  return Buffer.concat([header, pcmBuffer]);
+}
+
+export const synthesizeAudio = async (text, speakerName) => {
+  if (process.env.SARVAM_API_KEY) {
+    try {
+      const sarvamVoice = SARVAM_VOICES[speakerName] || 'shreya';
+      const response = await fetch('https://api.sarvam.ai/text-to-speech', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'api-subscription-key': process.env.SARVAM_API_KEY
+        },
+        body: JSON.stringify({
+          text,
+          target_language_code: 'en-IN',
+          speaker: sarvamVoice,
+          model: 'bulbul:v3'
+        })
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        if (data.audios && data.audios[0]) {
+          return {
+            audioContent: data.audios[0],
+            mimeType: 'audio/wav'
+          };
+        }
+      }
+    } catch (err) {
+      console.error('Sarvam TTS failed, falling back to Gemini:', err.message);
+    }
+  }
+
+  const geminiVoice = GEMINI_VOICES[speakerName] || 'Aoede';
+  const model = genAI.getGenerativeModel({ model: 'gemini-3.1-flash-tts-preview' });
+  const result = await model.generateContent({
+    contents: [{ role: 'user', parts: [{ text }] }],
+    generationConfig: {
+      responseModalities: ['AUDIO'],
+      speechConfig: {
+        voiceConfig: {
+          prebuiltVoiceConfig: {
+            voiceName: geminiVoice
+          }
+        }
+      }
+    }
+  });
+
+  const candidate = result.response.candidates?.[0];
+  const part = candidate?.content?.parts?.find(p => p.inlineData);
+
+  if (part && part.inlineData) {
+    const pcmBuffer = Buffer.from(part.inlineData.data, 'base64');
+    const wavBuffer = pcmToWav(pcmBuffer, 24000, 1, 16);
+    return {
+      audioContent: wavBuffer.toString('base64'),
+      mimeType: 'audio/wav'
+    };
+  }
+
+  throw new Error('No audio returned from Gemini');
+};
+
+export const generateTTS = async (req, res) => {
+  try {
+    const { text, speakerName } = req.body;
+    if (!text) {
+      return res.status(400).json({ success: false, message: 'Text is required' });
+    }
+    const data = await synthesizeAudio(text, speakerName);
+    res.json({
+      success: true,
+      data
+    });
+  } catch (error) {
+    console.error('TTS Generation failed:', error.message);
     res.status(500).json({ success: false, message: error.message });
   }
 };

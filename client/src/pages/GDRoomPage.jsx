@@ -32,25 +32,42 @@ export default function GDRoomPage() {
   const [textInput, setTextInput] = useState('');
   const [useTextMode, setUseTextMode] = useState(false);
   const [activeSpeaker, setActiveSpeaker] = useState(null);
+  const [mobileTab, setMobileTab] = useState('discussion');
+  const [concluding, setConcluding] = useState(false);
+  const [conclusionText, setConclusionText] = useState('');
+  const [isListeningConclusion, setIsListeningConclusion] = useState(false);
+  const conclusionRecognitionRef = useRef(null);
 
   const messagesEndRef = useRef(null);
   const recognitionRef = useRef(null);
   const timerRef = useRef(null);
-  const synthRef = useRef(window.speechSynthesis);
+  const audioRef = useRef(null);
   const speakingRef = useRef(false);
-  const voicesLoadedRef = useRef(false);
   const transcriptRef = useRef('');
   const lastStartRef = useRef(0);
   const restartCountRef = useRef(0);
+  const speechIdRef = useRef(0);
 
   useEffect(() => {
-    const synth = window.speechSynthesis;
-    const loadVoices = () => {
-      const v = synth.getVoices();
-      if (v.length > 0) voicesLoadedRef.current = true;
-    };
-    loadVoices();
-    synth.addEventListener('voiceschanged', loadVoices);
+    const cached = sessionStorage.getItem(`gd_session_${sessionId}`);
+    if (cached) {
+      try {
+        const parsed = JSON.parse(cached);
+        setSessionData(parsed);
+        setSession(parsed);
+        const elapsedSeconds = parsed.startedAt ? Math.floor((Date.now() - new Date(parsed.startedAt).getTime()) / 1000) : 0;
+        const remaining = Math.max(0, parsed.duration * 60 - elapsedSeconds);
+        setTimeRemaining(remaining);
+        if (remaining > 0) {
+          startTimer(remaining);
+        } else {
+          setShowConclusion(true);
+        }
+        setLoading(false);
+      } catch (err) {
+        console.error(err);
+      }
+    }
 
     fetchSession();
     return () => {
@@ -60,10 +77,27 @@ export default function GDRoomPage() {
         speakingRef.current = false;
         recognitionRef.current.abort();
       }
-      synth.cancel();
-      synth.removeEventListener('voiceschanged', loadVoices);
+      if (conclusionRecognitionRef.current) {
+        conclusionRecognitionRef.current.abort();
+      }
+      if (audioRef.current) {
+        audioRef.current.pause();
+      }
+      speechIdRef.current = -1;
     };
   }, [sessionId]);
+
+  useEffect(() => {
+    if (session) {
+      const updated = {
+        ...session,
+        messages,
+        passCount,
+        maxPasses
+      };
+      sessionStorage.setItem(`gd_session_${sessionId}`, JSON.stringify(updated));
+    }
+  }, [session, messages, passCount, maxPasses, sessionId]);
 
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -73,15 +107,30 @@ export default function GDRoomPage() {
     try {
       const res = await api.get(`/sessions/${sessionId}`);
       const s = res.data.data.session;
+      const preloadedAudio = res.data.data.lastMessageAudio;
       setSessionData(s);
       setSession(s);
-      setTimeRemaining(s.duration * 60);
-      startTimer(s.duration * 60);
+      const elapsedSeconds = s.startedAt ? Math.floor((Date.now() - new Date(s.startedAt).getTime()) / 1000) : 0;
+      const remaining = Math.max(0, s.duration * 60 - elapsedSeconds);
+      setTimeRemaining(remaining);
+      if (remaining > 0) {
+        startTimer(remaining);
+      } else {
+        setShowConclusion(true);
+      }
 
       if (s.messages && s.messages.length > 0) {
         const lastMsg = s.messages[s.messages.length - 1];
         if (lastMsg.speakerType === 'ai') {
-          setTimeout(() => speakText(lastMsg.message, lastMsg.speakerName), 500);
+          const msgKey = `${lastMsg.speakerName}_${lastMsg.message.slice(0, 20)}`;
+          const spokenKey = `gd_spoken_${sessionId}_${msgKey}`;
+          if (!sessionStorage.getItem(spokenKey)) {
+            if (preloadedAudio && preloadedAudio.audioContent) {
+              playAudioOnly(preloadedAudio.audioContent, preloadedAudio.mimeType, lastMsg.message, lastMsg.speakerName);
+            } else {
+              setTimeout(() => speakText(lastMsg.message, lastMsg.speakerName), 500);
+            }
+          }
         }
       }
     } catch (err) {
@@ -93,6 +142,7 @@ export default function GDRoomPage() {
   };
 
   const startTimer = (seconds) => {
+    if (timerRef.current) clearInterval(timerRef.current);
     let remaining = seconds;
     timerRef.current = setInterval(() => {
       remaining -= 1;
@@ -110,134 +160,46 @@ export default function GDRoomPage() {
     return `${m}:${sec.toString().padStart(2, '0')}`;
   };
 
-  const speakText = useCallback((text, name) => {
-    const synth = window.speechSynthesis;
-    if (!synth) return;
-    synth.cancel();
-
-    const PARTICIPANT_INFO = {
-      'Zara Iyer': {
-        gender: 'female',
-        pitch: 1.0,
-        rate: 0.90,
-        preferred: ['google india english female', 'zira', 'female', 'english']
-      },
-      'Aisha Nair': {
-        gender: 'female',
-        pitch: 1.25,
-        rate: 0.95,
-        preferred: ['google us english female', 'zira', 'female', 'english']
-      },
-      'Kabir Verma': {
-        gender: 'male',
-        pitch: 1.15,
-        rate: 0.9,
-        preferred: ['google uk english male', 'david', 'male', 'english']
-      },
-      'Reyansh Joshi': {
-        gender: 'male',
-        pitch: 1.0,
-        rate: 1.05,
-        preferred: ['google uk english male', 'david', 'male', 'english']
-      },
-      'Rudra Thakur': {
-        gender: 'male',
-        pitch: 0.70,
-        rate: 1.0,
-        preferred: ['google uk english male', 'david', 'male', 'english']
+  const speakText = useCallback(async (text, name) => {
+    const msgKey = `${name}_${text.slice(0, 20)}`;
+    sessionStorage.setItem(`gd_spoken_${sessionId}_${msgKey}`, 'true');
+    const currentId = ++speechIdRef.current;
+    try {
+      if (audioRef.current) {
+        audioRef.current.pause();
+        audioRef.current = null;
       }
-    };
-
-    const getVoiceGender = (voice) => {
-      const vName = voice.name.toLowerCase();
-      if (
-        vName.includes('male') ||
-        vName.includes('david') ||
-        vName.includes('george') ||
-        vName.includes('ravi') ||
-        vName.includes('guy') ||
-        vName.includes('boy') ||
-        vName.includes('mark') ||
-        (vName.includes('natural') && (vName.includes('guy') || vName.includes('ryan') || vName.includes('andrew') || vName.includes('brian')))
-      ) {
-        return 'male';
+      setActiveSpeaker(name);
+      const res = await api.post('/sessions/tts', { text, speakerName: name });
+      if (currentId !== speechIdRef.current || speechIdRef.current === -1) {
+        return;
       }
-      return 'female';
-    };
-
-    const cleanPronunciation = (str) => {
-      if (!str) return '';
-      return str
-        .replace(/\bKabir\b/g, 'Ka-beer')
-        .replace(/\bRudra\b/g, 'Roodra')
-        .replace(/\bZara\b/g, 'Zaara')
-        .replace(/\bAisha\b/g, 'Ayesha')
-        .replace(/\bReyansh\b/g, 'Rayaansh');
-    };
-
-    const doSpeak = (voicesList) => {
-      const info = PARTICIPANT_INFO[name] || { gender: 'female', pitch: 1.0, rate: 1.0, preferred: ['english'] };
-      const cleanedText = cleanPronunciation(text);
-      const utterance = new SpeechSynthesisUtterance(cleanedText);
-      utterance.rate = info.rate;
-      utterance.pitch = info.pitch;
-      utterance.volume = 1;
-
-      const enVoices = voicesList.filter(v => v.lang.startsWith('en'));
-      
-      if (enVoices.length > 0) {
-        let selectedVoice = null;
-        for (const pref of info.preferred) {
-          selectedVoice = enVoices.find(v => v.name.toLowerCase().includes(pref));
-          if (selectedVoice) break;
+      const { audioContent, mimeType } = res.data.data;
+      const audio = new Audio(`data:${mimeType};base64,${audioContent}`);
+      audioRef.current = audio;
+      audio.onplay = () => {
+        if (speechIdRef.current === currentId) {
+          setActiveSpeaker(name);
         }
-        if (!selectedVoice) {
-          const genderMatches = enVoices.filter(v => getVoiceGender(v) === info.gender);
-          selectedVoice = genderMatches.length > 0 ? genderMatches[0] : enVoices[0];
-        }
-        utterance.voice = selectedVoice;
-      }
-
-      utterance.onstart = () => {
-        console.log(`TTS speaking: ${name}`);
-        setActiveSpeaker(name);
       };
-      utterance.onerror = (e) => {
-        console.error('TTS error:', e.error);
+      audio.onended = () => {
+        if (speechIdRef.current === currentId) {
+          setActiveSpeaker(null);
+          audioRef.current = null;
+        }
+      };
+      audio.onerror = () => {
+        if (speechIdRef.current === currentId) {
+          setActiveSpeaker(null);
+          audioRef.current = null;
+        }
+      };
+      await audio.play();
+    } catch (err) {
+      console.error(err);
+      if (speechIdRef.current === currentId) {
         setActiveSpeaker(null);
-      };
-
-      synth.speak(utterance);
-
-      const keepAlive = setInterval(() => {
-        if (!synth.speaking) {
-          clearInterval(keepAlive);
-        } else {
-          synth.pause();
-          synth.resume();
-        }
-      }, 5000);
-      utterance.onend = () => {
-        clearInterval(keepAlive);
-        setActiveSpeaker(null);
-      };
-    };
-
-    const loadedVoices = synth.getVoices();
-    const hasGoogle = loadedVoices.some(v => v.name.toLowerCase().includes('google'));
-    
-    if (loadedVoices.length < 5 || (!hasGoogle && navigator.onLine)) {
-      const listener = () => {
-        synth.removeEventListener('voiceschanged', listener);
-        doSpeak(synth.getVoices());
-      };
-      synth.addEventListener('voiceschanged', listener);
-      setTimeout(() => {
-        synth.removeEventListener('voiceschanged', listener);
-        doSpeak(synth.getVoices());
-      }, 1000);
-    } else {
-      doSpeak(loadedVoices);
+      }
     }
   }, []);
 
@@ -284,7 +246,15 @@ export default function GDRoomPage() {
     recognition.onerror = (event) => {
       console.error('Speech recognition error event:', event.error);
       if (event.error === 'not-allowed' || event.error === 'service-not-allowed') {
-        toast.error('Microphone or speech service not allowed. Switching to text mode.');
+        const isNetworkUrl = window.location.hostname !== 'localhost' && window.location.hostname !== '127.0.0.1';
+        if (isNetworkUrl && window.location.protocol === 'http:') {
+          toast.error(
+            'Microphone access blocked on non-HTTPS network URLs. Use localhost/127.0.0.1, set up HTTPS, or add this site to chrome://flags/#unsafely-treat-insecure-origin-as-secure',
+            { duration: 10000 }
+          );
+        } else {
+          toast.error('Microphone or speech service not allowed. Switching to text mode.');
+        }
         setUseTextMode(true);
         speakingRef.current = false;
         setSpeaking(false);
@@ -300,7 +270,6 @@ export default function GDRoomPage() {
         const now = Date.now();
         const duration = now - lastStartRef.current;
         
-        // If it starts and stops in less than 1.5 seconds, count it as a rapid failure
         if (duration < 1500) {
           restartCountRef.current += 1;
         } else {
@@ -373,6 +342,152 @@ export default function GDRoomPage() {
     transcriptRef.current = '';
   };
 
+  const toggleConclusionSpeech = () => {
+    if (isListeningConclusion) {
+      if (conclusionRecognitionRef.current) {
+        conclusionRecognitionRef.current.stop();
+      }
+      setIsListeningConclusion(false);
+    } else {
+      const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+      if (!SpeechRecognition) {
+        toast.error('Speech recognition not supported in this browser.');
+        return;
+      }
+      const recognition = new SpeechRecognition();
+      recognition.continuous = true;
+      recognition.interimResults = true;
+      recognition.lang = 'en-US';
+      recognition.onresult = (event) => {
+        let finalPart = '';
+        for (let i = event.resultIndex; i < event.results.length; i++) {
+          if (event.results[i].isFinal) {
+            finalPart += event.results[i][0].transcript + ' ';
+          }
+        }
+        if (finalPart) {
+          setConclusionText((prev) => prev + finalPart);
+        }
+      };
+      recognition.onerror = (event) => {
+        console.error(event.error);
+        if (event.error === 'not-allowed') {
+          toast.error('Microphone access blocked. Check browser permissions or HTTPS.');
+        } else {
+          toast.error(`Mic error: ${event.error}`);
+        }
+        setIsListeningConclusion(false);
+      };
+      recognition.onend = () => {
+        setIsListeningConclusion(false);
+      };
+      conclusionRecognitionRef.current = recognition;
+      setIsListeningConclusion(true);
+      try {
+        recognition.start();
+        toast.success('Listening for conclusion...');
+      } catch (e) {
+        console.error(e);
+        setIsListeningConclusion(false);
+      }
+    }
+  };
+
+  const playAudioOnly = useCallback(async (audioContent, mimeType, text, name) => {
+    const currentId = ++speechIdRef.current;
+    const msgKey = `${name}_${text.slice(0, 20)}`;
+    sessionStorage.setItem(`gd_spoken_${sessionId}_${msgKey}`, 'true');
+
+    try {
+      if (audioRef.current) {
+        audioRef.current.pause();
+        audioRef.current = null;
+      }
+      setActiveSpeaker(name);
+
+      const audio = new Audio(`data:${mimeType};base64,${audioContent}`);
+      audioRef.current = audio;
+
+      audio.onplay = () => {
+        if (speechIdRef.current === currentId) {
+          setActiveSpeaker(name);
+        }
+      };
+      audio.onended = () => {
+        if (speechIdRef.current === currentId) {
+          setActiveSpeaker(null);
+          audioRef.current = null;
+        }
+      };
+      audio.onerror = () => {
+        if (speechIdRef.current === currentId) {
+          setActiveSpeaker(null);
+          audioRef.current = null;
+        }
+      };
+
+      await audio.play();
+    } catch (err) {
+      console.error(err);
+      if (speechIdRef.current === currentId) {
+        setActiveSpeaker(null);
+      }
+    }
+  }, [sessionId]);
+
+  const playAudioAndAddMessage = useCallback(async (audioContent, mimeType, msg) => {
+    const currentId = ++speechIdRef.current;
+    const msgKey = `${msg.speakerName}_${msg.message.slice(0, 20)}`;
+    sessionStorage.setItem(`gd_spoken_${sessionId}_${msgKey}`, 'true');
+
+    try {
+      if (audioRef.current) {
+        audioRef.current.pause();
+        audioRef.current = null;
+      }
+
+      const audio = new Audio(`data:${mimeType};base64,${audioContent}`);
+      audioRef.current = audio;
+
+      let added = false;
+      const addOnce = () => {
+        if (!added) {
+          added = true;
+          addMessage(msg);
+        }
+      };
+
+      audio.onplay = () => {
+        if (speechIdRef.current === currentId) {
+          setActiveSpeaker(msg.speakerName);
+          addOnce();
+        }
+      };
+      audio.onended = () => {
+        if (speechIdRef.current === currentId) {
+          setActiveSpeaker(null);
+          audioRef.current = null;
+        }
+      };
+      audio.onerror = () => {
+        addOnce();
+        if (speechIdRef.current === currentId) {
+          setActiveSpeaker(null);
+          audioRef.current = null;
+        }
+      };
+
+      await audio.play();
+      setTimeout(addOnce, 400);
+    } catch (err) {
+      console.error(err);
+      addMessage(msg);
+      if (speechIdRef.current === currentId) {
+        setActiveSpeaker(null);
+      }
+    }
+  }, [addMessage, sessionId]);
+
   const submitUserMessage = async (text) => {
     if (!text) return;
     setAiThinking(true);
@@ -385,14 +500,19 @@ export default function GDRoomPage() {
         message: data.userMessage.message,
         timestamp: new Date()
       });
-      addMessage({
+      const aiMsg = {
         speakerName: data.aiResponse.speakerName,
         speakerType: 'ai',
         personality: data.aiResponse.personality,
         message: data.aiResponse.message,
         timestamp: new Date()
-      });
-      speakText(data.aiResponse.message, data.aiResponse.speakerName);
+      };
+      if (data.aiResponse.audioContent) {
+        playAudioAndAddMessage(data.aiResponse.audioContent, data.aiResponse.mimeType, aiMsg);
+      } else {
+        addMessage(aiMsg);
+        speakText(aiMsg.message, aiMsg.speakerName);
+      }
       if (data.passCount !== undefined) {
         setMandatory(data.passCount >= maxPasses);
       }
@@ -424,14 +544,19 @@ export default function GDRoomPage() {
           toast(`Pass ${data.passCount}/${data.passCount + data.remainingPasses} used. Try contributing soon!`, { icon: '⚠️' });
         }
         if (data.newMessage) {
-          addMessage({
+          const aiMsg = {
             speakerName: data.newMessage.speakerName,
             speakerType: 'ai',
             personality: data.newMessage.personality,
             message: data.newMessage.message,
             timestamp: new Date()
-          });
-          speakText(data.newMessage.message, data.newMessage.speakerName);
+          };
+          if (data.newMessage.audioContent) {
+            playAudioAndAddMessage(data.newMessage.audioContent, data.newMessage.mimeType, aiMsg);
+          } else {
+            addMessage(aiMsg);
+            speakText(aiMsg.message, aiMsg.speakerName);
+          }
         }
       }
     } catch (err) {
@@ -446,14 +571,19 @@ export default function GDRoomPage() {
     try {
       const res = await api.post(`/sessions/${sessionId}/ai-respond`);
       const data = res.data.data;
-      addMessage({
+      const aiMsg = {
         speakerName: data.speaker,
         speakerType: 'ai',
         personality: data.personality,
         message: data.message,
         timestamp: new Date()
-      });
-      speakText(data.message, data.speaker);
+      };
+      if (data.audioContent) {
+        playAudioAndAddMessage(data.audioContent, data.mimeType, aiMsg);
+      } else {
+        addMessage(aiMsg);
+        speakText(aiMsg.message, aiMsg.speakerName);
+      }
     } catch (err) {
       toast.error('AI response failed');
     } finally {
@@ -462,8 +592,17 @@ export default function GDRoomPage() {
   };
 
   const handleEndSession = async (userConcluded) => {
+    if (conclusionRecognitionRef.current) {
+      conclusionRecognitionRef.current.abort();
+      conclusionRecognitionRef.current = null;
+    }
+    setIsListeningConclusion(false);
     try {
-      const res = await api.post(`/sessions/${sessionId}/end`, { userConcluded });
+      const payload = { userConcluded };
+      if (userConcluded && conclusionText.trim()) {
+        payload.conclusionText = conclusionText.trim();
+      }
+      const res = await api.post(`/sessions/${sessionId}/end`, payload);
       toast.success(`Session completed! Score: ${res.data.data.overallScore}`);
       navigate(`/reports/${sessionId}`);
     } catch (err) {
@@ -471,64 +610,30 @@ export default function GDRoomPage() {
     }
   };
 
-  const testTTS = () => {
-    const synth = window.speechSynthesis;
-    if (!synth) {
-      toast.error('Text-to-speech (TTS) is not supported by your browser.');
-      return;
-    }
-
-    const isBrave = navigator.brave && navigator.brave.isBrave;
-
-    const runTest = (voices) => {
-      if (voices.length === 0) {
-        if (isBrave) {
-          toast.error(
-            'Brave browser blocks TTS voices on deployed sites for privacy. Please use Chrome or Edge for voice features, or lower Brave Shields on this site.',
-            { duration: 8000 }
-          );
-        } else {
-          toast.error(
-            'No speech voices found on your system. Try using Chrome or Edge for TTS support.',
-            { duration: 6000 }
-          );
-        }
-        return;
+  const testTTS = async () => {
+    try {
+      if (audioRef.current) {
+        audioRef.current.pause();
+        audioRef.current = null;
       }
-
-      try {
-        synth.cancel();
-        const utterance = new SpeechSynthesisUtterance("Audio output is working correctly!");
-        utterance.rate = 1.0;
-        utterance.pitch = 1.0;
-        utterance.volume = 1.0;
-
-        const enVoices = voices.filter(v => v.lang.startsWith('en'));
-        utterance.voice = enVoices.length > 0 ? enVoices[0] : voices[0];
-
-        utterance.onstart = () => {
-          toast.success(`Playing sound using voice: ${utterance.voice?.name || 'default'}`);
-        };
-        utterance.onerror = (e) => {
-          toast.error(`TTS Speech Error: ${e.error}`);
-        };
-
-        synth.speak(utterance);
-      } catch (err) {
-        toast.error(`TTS trigger failed: ${err.message}`);
-      }
-    };
-
-    const voices = synth.getVoices();
-    if (voices.length === 0) {
-      synth.addEventListener('voiceschanged', () => runTest(synth.getVoices()), { once: true });
-      setTimeout(() => {
-        if (synth.getVoices().length === 0) {
-          runTest([]);
-        }
-      }, 3000);
-    } else {
-      runTest(voices);
+      const res = await api.post('/sessions/tts', { text: "Audio output is working correctly!", speakerName: "Zara Iyer" });
+      const { audioContent, mimeType } = res.data.data;
+      const audio = new Audio(`data:${mimeType};base64,${audioContent}`);
+      audioRef.current = audio;
+      audio.onplay = () => {
+        toast.success("Playing test sound via centralized AI voice");
+      };
+      audio.onended = () => {
+        audioRef.current = null;
+      };
+      audio.onerror = () => {
+        toast.error("Centralized AI voice playback failed");
+        audioRef.current = null;
+      };
+      await audio.play();
+    } catch (err) {
+      console.error(err);
+      toast.error("Centralized AI voice test failed");
     }
   };
 
@@ -565,7 +670,16 @@ export default function GDRoomPage() {
         </div>
       </header>
 
-      <div className="gd-body">
+      <div className="mobile-tabs-nav">
+        <button className={`mobile-tab-btn ${mobileTab === 'discussion' ? 'active' : ''}`} onClick={() => setMobileTab('discussion')}>
+          Discussion
+        </button>
+        <button className={`mobile-tab-btn ${mobileTab === 'info' ? 'active' : ''}`} onClick={() => setMobileTab('info')}>
+          Info & Stats
+        </button>
+      </div>
+
+      <div className={`gd-body ${mobileTab === 'discussion' ? 'show-discussion' : 'show-info'}`}>
         <div className="gd-discussion">
           <div className="active-speakers-strip">
             {session?.participants?.map((p, i) => {
@@ -715,16 +829,87 @@ export default function GDRoomPage() {
         <div className="conclusion-overlay">
           <div className="conclusion-modal card">
             <h2>Discussion {timeRemaining <= 0 ? 'Complete' : 'Ending'}</h2>
-            <p>Would you like to conclude the discussion?</p>
-            <p className="conclusion-bonus">Concluding earns you <strong>+50 bonus points!</strong></p>
-            <div className="conclusion-actions">
-              <button className="btn btn-primary btn-lg" onClick={() => handleEndSession(true)}>
-                Give Conclusion (+50 pts)
-              </button>
-              <button className="btn btn-secondary" onClick={() => handleEndSession(false)}>
-                Skip Conclusion
-              </button>
-            </div>
+            {!concluding ? (
+              <>
+                <p>Would you like to conclude the discussion?</p>
+                <p className="conclusion-bonus">Concluding earns you <strong>+50 bonus points!</strong></p>
+                <div className="conclusion-actions">
+                  <button className="btn btn-primary btn-lg" onClick={() => setConcluding(true)}>
+                    Give Conclusion (+50 pts)
+                  </button>
+                  <button className="btn btn-secondary" onClick={() => handleEndSession(false)}>
+                    Skip Conclusion
+                  </button>
+                </div>
+              </>
+            ) : (
+              <>
+                <div style={{ position: 'relative', width: '100%' }}>
+                  <textarea
+                    className="conclusion-textarea"
+                    placeholder="Type or dictate your final conclusion statement here..."
+                    value={conclusionText}
+                    onChange={(e) => setConclusionText(e.target.value)}
+                    style={{
+                      width: '100%',
+                      minHeight: '120px',
+                      margin: '12px 0',
+                      padding: '12px 48px 12px 12px',
+                      borderRadius: '8px',
+                      border: '1px solid var(--border-color)',
+                      background: 'var(--bg-primary)',
+                      color: 'var(--text-primary)',
+                      fontFamily: 'inherit',
+                      resize: 'none'
+                    }}
+                  />
+                  <button
+                    type="button"
+                    onClick={toggleConclusionSpeech}
+                    style={{
+                      position: 'absolute',
+                      right: '12px',
+                      bottom: '24px',
+                      background: isListeningConclusion ? '#EF4444' : 'var(--bg-secondary)',
+                      color: isListeningConclusion ? '#fff' : 'var(--text-primary)',
+                      border: '1px solid var(--border-color)',
+                      width: '36px',
+                      height: '36px',
+                      borderRadius: '50%',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      cursor: 'pointer',
+                      boxShadow: '0 2px 8px rgba(0,0,0,0.1)',
+                      animation: isListeningConclusion ? 'pulse-ring 2s infinite' : 'none'
+                    }}
+                    title={isListeningConclusion ? "Stop Listening" : "Dictate Conclusion"}
+                  >
+                    {isListeningConclusion ? <MicOff size={16} /> : <Mic size={16} />}
+                  </button>
+                </div>
+                <div className="conclusion-actions">
+                  <button
+                    className="btn btn-primary btn-lg"
+                    onClick={() => handleEndSession(true)}
+                    disabled={!conclusionText.trim()}
+                  >
+                    Submit & End
+                  </button>
+                  <button className="btn btn-secondary" onClick={() => {
+                    if (conclusionRecognitionRef.current) {
+                      conclusionRecognitionRef.current.abort();
+                      conclusionRecognitionRef.current = null;
+                    }
+                    setIsListeningConclusion(false);
+                    setConcluding(false);
+                    setConclusionText('');
+                  }}>
+                    Cancel
+                  </button>
+                </div>
+              </>
+            )}
           </div>
         </div>
       )}

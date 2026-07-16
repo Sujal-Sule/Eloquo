@@ -167,6 +167,29 @@ export default function DashboardPage() {
         </Link>
       </motion.section>
 
+      {data?.activeSession && (
+        <motion.div 
+          className="ongoing-session-banner"
+          initial={{ opacity: 0, scale: 0.95 }}
+          animate={{ opacity: 1, scale: 1 }}
+        >
+          <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+            <div className="ongoing-session-icon-bubble">
+              <Activity size={18} />
+            </div>
+            <div>
+              <h3 style={{ margin: 0, fontSize: '1rem', fontWeight: 700 }}>Ongoing Session Detected</h3>
+              <p style={{ margin: '2px 0 0 0', fontSize: '0.85rem', color: 'var(--text-secondary)' }}>
+                Topic: <strong>{data.activeSession.topic}</strong> ({data.activeSession.difficulty} · {data.activeSession.duration}m)
+              </p>
+            </div>
+          </div>
+          <Link to={`/gd/${data.activeSession._id}`} className="btn btn-primary btn-sm" style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+            Resume Session <ArrowRight size={14} />
+          </Link>
+        </motion.div>
+      )}
+
       {/* Stats row with separation borders */}
       <motion.section 
         className="stats-row"

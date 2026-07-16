@@ -10,7 +10,12 @@ export const getDashboard = async (req, res) => {
       stats = await UserStats.create({ userId });
     }
 
-    // Self-heal and recalculate streak based on completed sessions
+    const twoDaysAgo = new Date(Date.now() - 2 * 24 * 60 * 60 * 1000);
+    await GDSession.updateMany(
+      { status: 'active', startedAt: { $lt: twoDaysAgo } },
+      { $set: { status: 'completed', endedAt: new Date() } }
+    );
+
     const completedSessions = await GDSession.find({ userId, status: 'completed' })
       .sort({ endedAt: 1 })
       .select('endedAt');
@@ -81,6 +86,9 @@ export const getDashboard = async (req, res) => {
       date: s.endedAt
     }));
 
+    const activeSession = await GDSession.findOne({ userId, status: 'active' })
+      .select('topic difficulty duration startedAt');
+
     res.json({
       success: true,
       data: {
@@ -92,7 +100,13 @@ export const getDashboard = async (req, res) => {
         averageScore: stats.averageScore,
         recentSessions,
         achievements,
-        growthData
+        growthData,
+        activeSession: activeSession ? {
+          _id: activeSession._id,
+          topic: activeSession.topic,
+          difficulty: activeSession.difficulty,
+          duration: activeSession.duration
+        } : null
       }
     });
   } catch (error) {

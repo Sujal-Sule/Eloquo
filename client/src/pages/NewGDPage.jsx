@@ -19,11 +19,11 @@ const DURATIONS = [
 ];
 
 const PERSONALITIES = [
-  { id: 'analyst', name: 'Analyst', desc: 'Uses facts and logic', icon: '🔬' },
-  { id: 'challenger', name: 'Challenger', desc: 'Questions assumptions', icon: '⚔️' },
-  { id: 'supporter', name: 'Supporter', desc: 'Builds on ideas', icon: '🤝' },
-  { id: 'moderator', name: 'Moderator', desc: 'Guides discussion', icon: '🎯' },
-  { id: 'dominator', name: 'Dominator', desc: 'Strong opinions', icon: '👑' }
+  { id: 'analyst', name: 'Zara Iyer', role: 'Analyst', desc: 'Uses facts and logic', icon: '🔬' },
+  { id: 'challenger', name: 'Kabir Verma', role: 'Challenger', desc: 'Questions assumptions', icon: '⚔️' },
+  { id: 'supporter', name: 'Aisha Nair', role: 'Supporter', desc: 'Builds on ideas', icon: '🤝' },
+  { id: 'moderator', name: 'Reyansh Joshi', role: 'Moderator', desc: 'Guides discussion', icon: '🎯' },
+  { id: 'dominator', name: 'Rudra Thakur', role: 'Dominator', desc: 'Strong opinions', icon: '👑' }
 ];
 
 export default function NewGDPage() {
@@ -214,6 +214,7 @@ export default function NewGDPage() {
                   onClick={() => handlePersonalityToggle(p.id)}>
                   <span className="personality-icon">{p.icon}</span>
                   <span className="personality-name">{p.name}</span>
+                  <span className="personality-role">{p.role}</span>
                   <span className="personality-desc">{p.desc}</span>
                 </button>
               ))}
