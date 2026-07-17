@@ -11,6 +11,7 @@ export default function DashboardPage() {
   const user = useAuthStore((s) => s.user);
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [timeRange, setTimeRange] = useState('15d');
 
   useEffect(() => {
     const fetchDashboard = async () => {
@@ -74,48 +75,73 @@ export default function DashboardPage() {
     { label: 'Total Points', value: data?.leaderboardPoints || 0 }
   ];
 
-  const aggregatedData = {};
-  let minDateObj = null;
-  let maxDateObj = null;
-
+  const allTimeAggregated = {};
   data?.growthData?.forEach(s => {
     if (!s.score || !s.date) return;
     const dateObj = new Date(s.date);
     if (isNaN(dateObj.getTime())) return;
     const dateKey = dateObj.toISOString().split('T')[0];
-    
-    if (!minDateObj || dateObj < minDateObj) minDateObj = dateObj;
-    if (!maxDateObj || dateObj > maxDateObj) maxDateObj = dateObj;
-
-    if (!aggregatedData[dateKey]) {
-      aggregatedData[dateKey] = s.score;
-    } else {
-      if (s.score > aggregatedData[dateKey]) {
-        aggregatedData[dateKey] = s.score;
-      }
+    if (!allTimeAggregated[dateKey] || s.score > allTimeAggregated[dateKey].score) {
+      allTimeAggregated[dateKey] = { score: s.score, dateObj };
     }
   });
 
-  const formattedGrowthData = [];
-  if (minDateObj && maxDateObj) {
-    const current = new Date(minDateObj);
-    current.setHours(0, 0, 0, 0);
+  const allTimeData = Object.keys(allTimeAggregated)
+    .sort()
+    .map(key => ({
+      formattedDate: allTimeAggregated[key].dateObj.toLocaleDateString('en-US', { month: 'short', day: 'numeric' }),
+      score: allTimeAggregated[key].score
+    }));
+
+  const dailyData15d = [];
+  let maxDateObj = null;
+  data?.growthData?.forEach(s => {
+    if (!s.score || !s.date) return;
+    const dateObj = new Date(s.date);
+    if (isNaN(dateObj.getTime())) return;
+    if (!maxDateObj || dateObj > maxDateObj) maxDateObj = dateObj;
+  });
+
+  if (maxDateObj) {
     const end = new Date(maxDateObj);
     end.setHours(0, 0, 0, 0);
+    const start = new Date(end);
+    start.setDate(start.getDate() - 14);
+    let current = new Date(start);
+    
+    const sortedGrowth = [...(data?.growthData || [])]
+      .filter(s => s.score > 0 && s.date && !isNaN(new Date(s.date).getTime()))
+      .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
 
     let lastKnownScore = 0;
+    for (const s of sortedGrowth) {
+      const d = new Date(s.date);
+      d.setHours(0, 0, 0, 0);
+      if (d < start) {
+        lastKnownScore = s.score;
+      }
+    }
+
     while (current <= end) {
       const dateKey = current.toISOString().split('T')[0];
-      if (aggregatedData[dateKey] !== undefined) {
-        lastKnownScore = aggregatedData[dateKey];
+      const daySessions = sortedGrowth.filter(s => {
+        const d = new Date(s.date);
+        return d.toISOString().split('T')[0] === dateKey;
+      });
+
+      if (daySessions.length > 0) {
+        lastKnownScore = Math.max(...daySessions.map(s => s.score));
       }
-      formattedGrowthData.push({
+
+      dailyData15d.push({
         formattedDate: current.toLocaleDateString('en-US', { month: 'short', day: 'numeric' }),
         score: lastKnownScore
       });
       current.setDate(current.getDate() + 1);
     }
   }
+
+  const formattedGrowthData = timeRange === '15d' ? dailyData15d : allTimeData;
 
   const milestonesList = [];
   if (confidence < 41) {
@@ -341,7 +367,43 @@ export default function DashboardPage() {
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.2, duration: 0.5 }}
         >
-          <h2 className="dashboard-section-title">Confidence Growth</h2>
+          <div className="dashboard-section-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
+            <h2 className="dashboard-section-title" style={{ margin: 0 }}>Confidence Growth</h2>
+            <div className="toggle-container" style={{ display: 'flex', gap: '4px', background: 'var(--bg-secondary)', border: '2px solid var(--border-color)', borderRadius: 'var(--radius-md)', padding: '2px' }}>
+              <button 
+                onClick={() => setTimeRange('15d')} 
+                style={{
+                  border: 'none',
+                  background: timeRange === '15d' ? 'var(--bg-hover)' : 'transparent',
+                  color: 'var(--text-primary)',
+                  fontSize: '0.7rem',
+                  fontWeight: 'bold',
+                  textTransform: 'uppercase',
+                  padding: '4px 8px',
+                  cursor: 'pointer',
+                  fontFamily: 'var(--font-mono)'
+                }}
+              >
+                15 Days
+              </button>
+              <button 
+                onClick={() => setTimeRange('all')} 
+                style={{
+                  border: 'none',
+                  background: timeRange === 'all' ? 'var(--bg-hover)' : 'transparent',
+                  color: 'var(--text-primary)',
+                  fontSize: '0.7rem',
+                  fontWeight: 'bold',
+                  textTransform: 'uppercase',
+                  padding: '4px 8px',
+                  cursor: 'pointer',
+                  fontFamily: 'var(--font-mono)'
+                }}
+              >
+                All Time
+              </button>
+            </div>
+          </div>
           {formattedGrowthData.length > 0 ? (
             <ResponsiveContainer width="100%" height={180}>
               <AreaChart data={formattedGrowthData}>
