@@ -81,10 +81,12 @@ export default function DashboardPage() {
     if (isNaN(dateObj.getTime())) return;
     const dateKey = dateObj.toISOString().split('T')[0];
     if (!aggregatedData[dateKey]) {
-      aggregatedData[dateKey] = { sum: 0, count: 0, dateObj };
+      aggregatedData[dateKey] = { maxScore: s.score, dateObj };
+    } else {
+      if (s.score > aggregatedData[dateKey].maxScore) {
+        aggregatedData[dateKey].maxScore = s.score;
+      }
     }
-    aggregatedData[dateKey].sum += s.score;
-    aggregatedData[dateKey].count += 1;
   });
 
   const formattedGrowthData = Object.keys(aggregatedData)
@@ -93,7 +95,7 @@ export default function DashboardPage() {
       const group = aggregatedData[key];
       return {
         formattedDate: group.dateObj.toLocaleDateString('en-US', { month: 'short', day: 'numeric' }),
-        score: Math.round(group.sum / group.count)
+        score: group.maxScore
       };
     });
 
