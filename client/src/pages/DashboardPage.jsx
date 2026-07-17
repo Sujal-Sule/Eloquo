@@ -74,30 +74,28 @@ export default function DashboardPage() {
     { label: 'Total Points', value: data?.leaderboardPoints || 0 }
   ];
 
-  const uniqueDates = [];
   const aggregatedData = {};
   data?.growthData?.forEach(s => {
-    if (s.score === 0) return;
-    const formattedDate = new Date(s.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
-    if (!aggregatedData[formattedDate]) {
-      aggregatedData[formattedDate] = { sum: 0, count: 0 };
-      uniqueDates.push(formattedDate);
+    if (!s.score || !s.date) return;
+    const dateObj = new Date(s.date);
+    if (isNaN(dateObj.getTime())) return;
+    const dateKey = dateObj.toISOString().split('T')[0];
+    if (!aggregatedData[dateKey]) {
+      aggregatedData[dateKey] = { sum: 0, count: 0, dateObj };
     }
-    aggregatedData[formattedDate].sum += s.score;
-    aggregatedData[formattedDate].count += 1;
+    aggregatedData[dateKey].sum += s.score;
+    aggregatedData[dateKey].count += 1;
   });
 
-  let formattedGrowthData = uniqueDates.map(date => ({
-    formattedDate: date,
-    score: Math.round(aggregatedData[date].sum / aggregatedData[date].count)
-  }));
-
-  if (formattedGrowthData.length === 0 && data?.growthData?.length > 0) {
-    formattedGrowthData = data.growthData.map(s => ({
-      score: s.score,
-      formattedDate: new Date(s.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
-    }));
-  }
+  const formattedGrowthData = Object.keys(aggregatedData)
+    .sort()
+    .map(key => {
+      const group = aggregatedData[key];
+      return {
+        formattedDate: group.dateObj.toLocaleDateString('en-US', { month: 'short', day: 'numeric' }),
+        score: Math.round(group.sum / group.count)
+      };
+    });
 
   const milestonesList = [];
   if (confidence < 41) {

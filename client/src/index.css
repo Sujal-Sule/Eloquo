@@ -25,9 +25,9 @@
   --radius-md: 2px;
   --radius-lg: 4px;
   --radius-xl: 6px;
-  --shadow-sm: 2px 2px 0px 0px var(--border-color);
-  --shadow-md: 4px 4px 0px 0px var(--border-color);
-  --shadow-lg: 6px 6px 0px 0px var(--border-color);
+  --shadow-sm: 1px 1px 0px 0px var(--border-color);
+  --shadow-md: 2px 2px 0px 0px var(--border-color);
+  --shadow-lg: 3px 3px 0px 0px var(--border-color);
   --transition: 0.1s steps(4);
   --font-title: 'Share Tech Mono', 'Courier New', monospace;
   --font-body: 'Plus Jakarta Sans', sans-serif;
@@ -111,7 +111,7 @@ input, textarea, select {
 }
 .btn-primary:hover {
   background: var(--accent-primary-hover);
-  transform: translate(-2px, -2px);
+  transform: translate(-1px, -1px);
   box-shadow: var(--shadow-md);
 }
 .btn-primary:active {
@@ -126,7 +126,7 @@ input, textarea, select {
 }
 .btn-secondary:hover {
   background: var(--bg-hover);
-  transform: translate(-2px, -2px);
+  transform: translate(-1px, -1px);
   box-shadow: var(--shadow-md);
 }
 .btn-secondary:active {
@@ -142,7 +142,7 @@ input, textarea, select {
   color: var(--text-primary);
   background: var(--bg-hover);
   border-color: var(--border-color);
-  transform: translate(-2px, -2px);
+  transform: translate(-1px, -1px);
   box-shadow: var(--shadow-sm);
 }
 
@@ -153,7 +153,7 @@ input, textarea, select {
 }
 .btn-danger:hover {
   background: #B91C1C;
-  transform: translate(-2px, -2px);
+  transform: translate(-1px, -1px);
   box-shadow: var(--shadow-md);
 }
 .btn-danger:active {
@@ -194,7 +194,7 @@ input, textarea, select {
   box-shadow: var(--shadow-md);
 }
 .card:hover {
-  transform: translate(-2px, -2px);
+  transform: translate(-1px, -1px);
   box-shadow: var(--shadow-lg);
 }
 

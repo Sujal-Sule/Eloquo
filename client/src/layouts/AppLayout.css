@@ -59,7 +59,7 @@
   background: var(--bg-hover);
   color: var(--text-primary);
   border-color: var(--border-color);
-  transform: translate(-2px, -2px);
+  transform: translate(-1px, -1px);
   box-shadow: var(--shadow-sm);
 }
 .sidebar-link.active {

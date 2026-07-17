@@ -137,13 +137,13 @@
   cursor: pointer;
 }
 .option-card:hover {
-  transform: translate(-2px, -2px);
+  transform: translate(-1px, -1px);
   box-shadow: var(--shadow-md);
 }
 .option-card.selected {
   background: var(--bg-hover);
   border-color: var(--border-color);
-  transform: translate(-2px, -2px);
+  transform: translate(-1px, -1px);
   box-shadow: var(--shadow-md);
 }
 .option-icon {
@@ -182,13 +182,13 @@
   cursor: pointer;
 }
 .participant-btn:hover {
-  transform: translate(-2px, -2px);
+  transform: translate(-1px, -1px);
   box-shadow: var(--shadow-md);
 }
 .participant-btn.selected {
   background: var(--bg-hover);
   border-color: var(--border-color);
-  transform: translate(-2px, -2px);
+  transform: translate(-1px, -1px);
   box-shadow: var(--shadow-md);
 }
 .participant-count {
@@ -224,13 +224,13 @@
   cursor: pointer;
 }
 .personality-card:hover {
-  transform: translate(-2px, -2px);
+  transform: translate(-1px, -1px);
   box-shadow: var(--shadow-md);
 }
 .personality-card.selected {
   background: var(--bg-hover);
   border-color: var(--border-color);
-  transform: translate(-2px, -2px);
+  transform: translate(-1px, -1px);
   box-shadow: var(--shadow-md);
 }
 .personality-icon {
@@ -305,7 +305,7 @@
   border: 2px solid rgba(26, 45, 66, 0.25) !important;
   background: var(--bg-secondary);
   color: var(--text-secondary);
-  box-shadow: 2px 2px 0px 0px var(--border-color) !important;
+  box-shadow: 1px 1px 0px 0px var(--border-color) !important;
   margin: 16px auto 0 auto;
   transition: all var(--transition);
   display: inline-flex;
@@ -314,11 +314,11 @@
   border-color: var(--border-color) !important;
   background: var(--bg-hover);
   color: var(--text-primary);
-  transform: translate(-1px, -1px);
-  box-shadow: 3px 3px 0px 0px var(--border-color) !important;
+  transform: translate(-0.5px, -0.5px);
+  box-shadow: 2px 2px 0px 0px var(--border-color) !important;
 }
 .btn-shuffle:active {
-  transform: translate(1px, 1px);
+  transform: translate(0.5px, 0.5px);
   box-shadow: 1px 1px 0px 0px var(--border-color) !important;
 }
 

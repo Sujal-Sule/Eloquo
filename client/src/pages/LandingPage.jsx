@@ -192,7 +192,7 @@ export default function LandingPage() {
               <span className="hero-gradient">Confidently & persuasively.</span>
             </motion.h1>
             
-            <motion.div className="hero-flower-dec" variants={itemVariants} style={{ margin: '24px 0', display: 'flex' }}>
+            <motion.div className="hero-flower-dec" variants={itemVariants} style={{ margin: '12px 0', display: 'flex' }}>
               <svg width="36" height="36" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" style={{ imageRendering: 'pixelated' }}>
                 <rect x="10" y="2" width="4" height="4" fill="#D4E2EC" stroke="#1A2D42" stroke-width="2" />
                 <rect x="10" y="18" width="4" height="4" fill="#D4E2EC" stroke="#1A2D42" stroke-width="2" />
