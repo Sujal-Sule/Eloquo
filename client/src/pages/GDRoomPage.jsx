@@ -267,6 +267,12 @@ export default function GDRoomPage() {
 
     recognition.onend = () => {
       if (speakingRef.current) {
+        const isMobile = /Mobi|Android|iPhone|iPad/i.test(navigator.userAgent) || window.innerWidth <= 1024;
+        if (isMobile) {
+          stopSpeechRecognition();
+          return;
+        }
+
         const now = Date.now();
         const duration = now - lastStartRef.current;
         

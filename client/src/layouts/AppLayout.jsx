@@ -26,7 +26,18 @@ export default function AppLayout() {
     return (
       <div className="mobile-layout">
         <header className="mobile-header">
-          <div className="mobile-logo-section">
+          <div className="mobile-logo-section" style={{ display: 'flex', alignItems: 'center' }}>
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" style={{ imageRendering: 'pixelated', marginRight: '8px' }}>
+              <rect x="10" y="4" width="4" height="4" fill="#D4E2EC" stroke="#1A2D42" stroke-width="1.5" />
+              <rect x="10" y="16" width="4" height="4" fill="#D4E2EC" stroke="#1A2D42" stroke-width="1.5" />
+              <rect x="4" y="10" width="4" height="4" fill="#D4E2EC" stroke="#1A2D42" stroke-width="1.5" />
+              <rect x="16" y="10" width="4" height="4" fill="#D4E2EC" stroke="#1A2D42" stroke-width="1.5" />
+              <rect x="6" y="6" width="4" height="4" fill="#D4E2EC" stroke="#1A2D42" stroke-width="1.5" />
+              <rect x="14" y="6" width="4" height="4" fill="#D4E2EC" stroke="#1A2D42" stroke-width="1.5" />
+              <rect x="6" y="14" width="4" height="4" fill="#D4E2EC" stroke="#1A2D42" stroke-width="1.5" />
+              <rect x="14" y="14" width="4" height="4" fill="#D4E2EC" stroke="#1A2D42" stroke-width="1.5" />
+              <rect x="10" y="10" width="4" height="4" fill="#F4F3EF" stroke="#1A2D42" stroke-width="1.5" />
+            </svg>
             <span className="mobile-logo-text">Eloquo</span>
           </div>
           <div className="mobile-header-right">

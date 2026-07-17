@@ -169,7 +169,7 @@ export default function LandingPage() {
     <div className="landing">
       <nav className="landing-nav">
         <div className="landing-nav-inner">
-          <div className="landing-brand">
+          <div className="landing-brand" style={{ display: 'flex', alignItems: 'center' }}>
             <img src="/logo.svg" alt="Eloquo" className="landing-logo" style={{ width: '190px', height: '105px', margin: '-45px 0' }} />
           </div>
           <div className="landing-nav-links">
@@ -179,227 +179,232 @@ export default function LandingPage() {
         </div>
       </nav>
 
-      {/* Hero Section */}
-      <motion.section 
-        className="hero"
-        initial="hidden"
-        animate="visible"
-        variants={heroVariants}
-      >
-        <motion.h1 className="hero-title" variants={itemVariants}>
-          Speak Clearly.<br />
-          <span className="hero-gradient">Confidently & persuasively.</span>
-        </motion.h1>
-        <motion.p className="hero-subtitle" variants={itemVariants}>
-          Eloquo provides a modern environment to practice realistic group discussions
-          with active AI peers. Conquer hesitation, master fluency, and prepare for placements.
-        </motion.p>
-        <motion.div className="hero-actions" variants={itemVariants}>
-          <Link to="/register" className="btn btn-primary btn-lg">
-            Start Practicing Free <ArrowRight size={18} />
-          </Link>
-          <Link to="/login" className="btn btn-secondary btn-lg">
-            I have an account
-          </Link>
-        </motion.div>
-      </motion.section>
+      <div className="landing-grid-container">
+        <aside className="landing-left-panel">
+          <motion.div 
+            className="hero"
+            initial="hidden"
+            animate="visible"
+            variants={heroVariants}
+          >
+            <motion.h1 className="hero-title" variants={itemVariants}>
+              Speak Clearly.<br />
+              <span className="hero-gradient">Confidently & persuasively.</span>
+            </motion.h1>
+            
+            <motion.div className="hero-flower-dec" variants={itemVariants} style={{ margin: '24px 0', display: 'flex' }}>
+              <svg width="36" height="36" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" style={{ imageRendering: 'pixelated' }}>
+                <rect x="10" y="2" width="4" height="4" fill="#D4E2EC" stroke="#1A2D42" stroke-width="2" />
+                <rect x="10" y="18" width="4" height="4" fill="#D4E2EC" stroke="#1A2D42" stroke-width="2" />
+                <rect x="2" y="10" width="4" height="4" fill="#D4E2EC" stroke="#1A2D42" stroke-width="2" />
+                <rect x="18" y="10" width="4" height="4" fill="#D4E2EC" stroke="#1A2D42" stroke-width="2" />
+                <rect x="5" y="5" width="4" height="4" fill="#D4E2EC" stroke="#1A2D42" stroke-width="2" />
+                <rect x="15" y="5" width="4" height="4" fill="#D4E2EC" stroke="#1A2D42" stroke-width="2" />
+                <rect x="5" y="15" width="4" height="4" fill="#D4E2EC" stroke="#1A2D42" stroke-width="2" />
+                <rect x="15" y="15" width="4" height="4" fill="#D4E2EC" stroke="#1A2D42" stroke-width="2" />
+                <rect x="10" y="10" width="4" height="4" fill="#F4F3EF" stroke="#1A2D42" stroke-width="2" />
+              </svg>
+            </motion.div>
 
-      {/* Interactive Simulator Demo Section */}
-      <section className="demo-section">
-        <motion.div 
-          className="demo-container"
-          initial={{ opacity: 0, y: 30 }}
-          whileInView={{ opacity: 1, y: 0 }}
-          viewport={{ once: true, margin: '-100px' }}
-          transition={{ duration: 0.6 }}
-        >
-          <div className="demo-header">
-            <div className="demo-dots">
-              <span className="dot-red"></span>
-              <span className="dot-yellow"></span>
-              <span className="dot-green"></span>
-            </div>
-            <span className="demo-title-text">Live Simulator Preview</span>
-            <button className="demo-reset-btn" onClick={() => setDemoStep(0)}>Reset Demo</button>
-          </div>
-          <div className="demo-messages-list" ref={chatContainerRef}>
-            {demoMessages.slice(0, demoStep + 1).map((msg, i) => (
-              <motion.div 
-                 key={i} 
-                className={`demo-msg-item msg-${msg.role}`}
-                initial={{ opacity: 0, x: msg.role === 'user' ? 20 : -20, y: 10 }}
-                animate={{ opacity: 1, x: 0, y: 0 }}
-                transition={{ type: 'spring', stiffness: 260, damping: 22 }}
-              >
-                <div className="demo-msg-avatar">
-                  {msg.name[0]}
-                </div>
-                <div className="demo-msg-body">
-                  <div className="demo-msg-meta">
-                    <span className="demo-msg-name">{msg.name}</span>
-                    <span className="demo-msg-role-tag">{msg.role}</span>
-                  </div>
-                  <p className="demo-msg-text">{msg.text}</p>
-                </div>
-              </motion.div>
-            ))}
-            <div className="demo-typing-indicator">
-              <span className="typing-dot"></span>
-              <span className="typing-dot"></span>
-              <span className="typing-dot"></span>
-              <span className="typing-label">AI is responding...</span>
-            </div>
-          </div>
-        </motion.div>
-      </section>
+            <motion.p className="hero-subtitle" variants={itemVariants}>
+              Eloquo provides a judgment-free virtual environment to practice group discussions
+              with active AI peers. Conquer stage fear, master fluency, and get ready for placement interviews.
+            </motion.p>
+            <motion.div className="hero-actions" variants={itemVariants}>
+              <Link to="/register" className="btn btn-primary btn-lg" style={{ width: '100%' }}>
+                Start Practicing Free <ArrowRight size={18} />
+              </Link>
+            </motion.div>
 
-      {/* Topics Showcase Directory (Table Accordion Layout) */}
-      <section className="topics-section">
-        <h2 className="section-title text-center" style={{ textAlign: 'center', marginBottom: '12px' }}>
-          Explore Placement Topics
-        </h2>
-        <p className="section-subtitle-text">
-          Select a category and expand a topic to preview talking parameters.
-        </p>
-        
-        <div className="topic-tabs">
-          {['tech', 'social', 'education'].map((category) => (
-            <button 
-              key={category}
-              className={`topic-tab-btn ${activeTopic === category ? 'active' : ''}`} 
-              onClick={() => {
-                setActiveTopic(category);
-                setExpandedTopic(null);
-              }}
-            >
-              {category === 'tech' ? 'Technology' : category === 'social' ? 'Social & Economy' : 'Education & Career'}
-            </button>
-          ))}
-        </div>
-
-        <motion.div 
-          className="topics-directory-list"
-          variants={containerVariants}
-          initial="hidden"
-          animate="visible"
-          key={activeTopic}
-        >
-          {topicsShowcase[activeTopic].map((topic, i) => (
-            <motion.div 
-              key={i} 
-              className={`directory-row-item ${expandedTopic === i ? 'is-expanded' : ''}`}
-              variants={itemVariants}
-            >
-              <div 
-                className="directory-row-header"
-                onClick={() => toggleExpandTopic(i)}
-              >
-                <div className="dir-col-main">
-                  <span className="dir-index">0{i + 1}</span>
-                  <span className="dir-title">{topic.title}</span>
-                </div>
-                <div className="dir-col-meta">
-                  <div className="difficulty-badge" data-difficulty={topic.difficulty.toLowerCase()}>
-                    {topic.difficulty}
-                  </div>
-                  <div className="dir-meta-details">
-                    <Clock size={13} />
-                    <span>{topic.duration}</span>
-                  </div>
-                  <div className="dir-icon-toggle">
-                    {expandedTopic === i ? <ChevronUp size={18} /> : <ChevronDown size={18} />}
-                  </div>
-                </div>
+            <motion.div className="retro-status-card card" variants={itemVariants} style={{ marginTop: '24px', textAlign: 'left', padding: '16px' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', borderBottom: '2px solid var(--border-color)', paddingBottom: '8px', marginBottom: '8px', fontFamily: 'var(--font-mono)', fontSize: '0.78rem', fontWeight: 'bold' }}>
+                <span>SYSTEM_STATUS.LOG</span>
+                <span className="typing-dot" style={{ background: '#8DE0A6', opacity: 1, animation: 'pulse 1.4s infinite' }}></span>
               </div>
+              <div style={{ fontFamily: 'var(--font-mono)', fontSize: '0.8rem', color: 'var(--text-secondary)', display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                <div>&gt; AIDiscussant.engine: loaded (5 personalities)</div>
+                <div>&gt; VoiceSynthesis: Gemini-Sarvam dual pipeline active</div>
+                <div>&gt; UserDictation: WebSpeechAPI debounced</div>
+              </div>
+            </motion.div>
+          </motion.div>
+        </aside>
 
-              <AnimatePresence initial={false}>
-                {expandedTopic === i && (
+        <main className="landing-right-panel">
+          <div className="landing-section-card card">
+            <div style={{ marginBottom: '16px' }}>
+              <h3 style={{ fontFamily: 'var(--font-title)', fontSize: '1.25rem', marginBottom: '4px' }}>01. LIVE PREVIEW</h3>
+              <p style={{ fontSize: '0.88rem', color: 'var(--text-secondary)' }}>Observe a mock session in progress. Active speakers auto-highlight in real-time.</p>
+            </div>
+            
+            <div className="demo-container">
+              <div className="demo-header">
+                <div className="demo-dots">
+                  <span className="dot-red"></span>
+                  <span className="dot-yellow"></span>
+                  <span className="dot-green"></span>
+                </div>
+                <span className="demo-title-text" style={{ fontFamily: 'var(--font-mono)' }}>Live Simulator Preview</span>
+                <button className="demo-reset-btn" onClick={() => setDemoStep(0)} style={{ fontFamily: 'var(--font-mono)' }}>Reset</button>
+              </div>
+              <div className="demo-messages-list" ref={chatContainerRef}>
+                {demoMessages.slice(0, demoStep + 1).map((msg, i) => (
                   <motion.div 
-                    className="directory-row-content"
-                    initial={{ height: 0, opacity: 0 }}
-                    animate={{ height: 'auto', opacity: 1 }}
-                    exit={{ height: 0, opacity: 0 }}
-                    transition={{ duration: 0.25, ease: 'easeInOut' }}
+                    key={i} 
+                    className={`demo-msg-item msg-${msg.role}`}
+                    initial={{ opacity: 0, x: msg.role === 'user' ? 20 : -20, y: 10 }}
+                    animate={{ opacity: 1, x: 0, y: 0 }}
+                    transition={{ type: 'spring', stiffness: 260, damping: 22 }}
                   >
-                    <div className="dir-expand-inner">
-                      <div className="dir-expand-grid">
-                        <div className="dir-expand-column">
-                          <h4>Key Discussion Focus</h4>
-                          <ul>
-                            {topic.talkingPoints.map((pt, idx) => (
-                              <li key={idx}>{pt}</li>
-                            ))}
-                          </ul>
-                        </div>
-                        <div className="dir-expand-column">
-                          <h4>Active AI Discussants</h4>
-                          <div className="peer-tags">
-                            {topic.participants.map((p, idx) => (
-                              <span key={idx} className="peer-tag">{p}</span>
-                            ))}
-                          </div>
-                          <div className="sandbox-link-wrapper" style={{ marginTop: '20px' }}>
-                            <Link to="/register" className="btn btn-primary btn-sm">
-                              Launch Simulation <Play size={10} fill="currentColor" style={{ marginLeft: '4px' }} />
-                            </Link>
-                          </div>
-                        </div>
+                    <div className="demo-msg-avatar" style={{ borderRadius: 'var(--radius-md)', border: '3px solid var(--border-color)' }}>
+                      {msg.name[0]}
+                    </div>
+                    <div className="demo-msg-body">
+                      <div className="demo-msg-meta">
+                        <span className="demo-msg-name">{msg.name}</span>
+                        <span className="demo-msg-role-tag" style={{ fontFamily: 'var(--font-mono)' }}>{msg.role}</span>
                       </div>
+                      <p className="demo-msg-text" style={{ border: '3px solid var(--border-color)' }}>{msg.text}</p>
                     </div>
                   </motion.div>
-                )}
-              </AnimatePresence>
-            </motion.div>
-          ))}
-        </motion.div>
-      </section>
-
-      {/* Core Features Split-Typographic Layout */}
-      <section className="features-editorial">
-        <div className="features-editorial-inner">
-          <div className="features-editorial-left">
-            <h2 className="editorial-title">Designed to Master Placement Speaking</h2>
-            <p className="editorial-desc">
-              We stripped away unnecessary distractions and created a clean space focused on real discussion metrics. Elevate your confidence step by step.
-            </p>
+                ))}
+                <div className="demo-typing-indicator">
+                  <span className="typing-dot"></span>
+                  <span className="typing-dot"></span>
+                  <span className="typing-dot"></span>
+                  <span className="typing-label" style={{ fontFamily: 'var(--font-mono)' }}>AI is responding...</span>
+                </div>
+              </div>
+            </div>
           </div>
-          <div className="features-editorial-right">
+
+          <div className="landing-section-card card">
+            <div style={{ marginBottom: '24px' }}>
+              <h3 style={{ fontFamily: 'var(--font-title)', fontSize: '1.25rem', marginBottom: '4px' }}>02. PLACEMENT TOPICS</h3>
+              <p style={{ fontSize: '0.88rem', color: 'var(--text-secondary)' }}>Click tabs to preview custom scenarios designed for tech and corporate drives.</p>
+            </div>
+            
+            <div className="topic-tabs">
+              {['tech', 'social', 'education'].map((category) => (
+                <button 
+                  key={category}
+                  className={`topic-tab-btn ${activeTopic === category ? 'active' : ''}`} 
+                  onClick={() => {
+                    setActiveTopic(category);
+                    setExpandedTopic(null);
+                  }}
+                  style={{ fontFamily: 'var(--font-mono)' }}
+                >
+                  {category === 'tech' ? 'Tech' : category === 'social' ? 'Social' : 'Edu'}
+                </button>
+              ))}
+            </div>
+
             <motion.div 
-              className="editorial-features-stack"
-              initial="hidden"
-              whileInView="visible"
-              viewport={{ once: true, margin: '-80px' }}
+              className="topics-directory-list"
               variants={containerVariants}
+              initial="hidden"
+              animate="visible"
+              key={activeTopic}
             >
-              {featuresList.map((feat, i) => (
+              {topicsShowcase[activeTopic].map((topic, i) => (
                 <motion.div 
                   key={i} 
-                  className="editorial-feature-item" 
+                  className={`directory-row-item ${expandedTopic === i ? 'is-expanded' : ''}`}
                   variants={itemVariants}
                 >
-                  <span className="editorial-num">{feat.num}</span>
-                  <div className="editorial-content">
-                    <h3>{feat.title}</h3>
-                    <p>{feat.desc}</p>
+                  <div 
+                    className="directory-row-header"
+                    onClick={() => toggleExpandTopic(i)}
+                  >
+                    <div className="dir-col-main">
+                      <span className="dir-index">0{i + 1}</span>
+                      <span className="dir-title">{topic.title}</span>
+                    </div>
+                    <div className="dir-col-meta">
+                      <div className="difficulty-badge" data-difficulty={topic.difficulty.toLowerCase()} style={{ border: '2px solid var(--border-color)', borderRadius: 'var(--radius-sm)', padding: '2px 6px' }}>
+                        {topic.difficulty}
+                      </div>
+                      <div className="dir-icon-toggle">
+                        {expandedTopic === i ? <ChevronUp size={18} /> : <ChevronDown size={18} />}
+                      </div>
+                    </div>
                   </div>
+
+                  <AnimatePresence initial={false}>
+                    {expandedTopic === i && (
+                      <motion.div 
+                        className="directory-row-content"
+                        initial={{ height: 0, opacity: 0 }}
+                        animate={{ height: 'auto', opacity: 1 }}
+                        exit={{ height: 0, opacity: 0 }}
+                        transition={{ duration: 0.25, ease: 'easeInOut' }}
+                      >
+                        <div className="dir-expand-inner" style={{ paddingLeft: '54px' }}>
+                          <div className="dir-expand-grid">
+                            <div className="dir-expand-column">
+                              <h4 style={{ fontFamily: 'var(--font-mono)' }}>Focus Points</h4>
+                              <ul>
+                                {topic.talkingPoints.map((pt, idx) => (
+                                  <li key={idx}>{pt}</li>
+                                ))}
+                              </ul>
+                            </div>
+                            <div className="dir-expand-column">
+                              <h4 style={{ fontFamily: 'var(--font-mono)' }}>AI Cast</h4>
+                              <div className="peer-tags">
+                                {topic.participants.map((p, idx) => (
+                                  <span key={idx} className="peer-tag" style={{ border: '2px solid var(--border-color)', borderRadius: 'var(--radius-sm)' }}>{p}</span>
+                                ))}
+                              </div>
+                              <div className="sandbox-link-wrapper" style={{ marginTop: '16px' }}>
+                                <Link to="/register" className="btn btn-primary btn-sm">
+                                  Try Now <Play size={10} fill="currentColor" />
+                                </Link>
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+                      </motion.div>
+                    )}
+                  </AnimatePresence>
                 </motion.div>
               ))}
             </motion.div>
           </div>
-        </div>
-      </section>
 
-      <section className="cta-section">
-        <h2>Start building your speaking skills today.</h2>
-        <p>Zero setups. Access placement-level simulation instantly.</p>
-        <Link to="/register" className="btn btn-primary btn-lg">
-          Create Free Account <ArrowRight size={18} />
-        </Link>
-      </section>
+          <div className="landing-section-card card">
+            <div style={{ marginBottom: '24px' }}>
+              <h3 style={{ fontFamily: 'var(--font-title)', fontSize: '1.25rem', marginBottom: '4px' }}>03. DESIGN INTEGRITY</h3>
+              <p style={{ fontSize: '0.88rem', color: 'var(--text-secondary)' }}>Built specifically to reduce nervousness and reward preparation.</p>
+            </div>
+            
+            <div className="editorial-features-stack">
+              {featuresList.map((feat, i) => (
+                <div key={i} className="editorial-feature-item" style={{ padding: '20px 0', borderBottom: '3px solid var(--border-color)' }}>
+                  <span className="editorial-num">0{i + 1}</span>
+                  <div className="editorial-content">
+                    <h3 style={{ fontSize: '1.05rem', fontWeight: 'bold' }}>{feat.title}</h3>
+                    <p style={{ fontSize: '0.82rem', marginTop: '4px' }}>{feat.desc}</p>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
 
-      <footer className="landing-footer">
-        <p>© {new Date().getFullYear()} Eloquo. All rights reserved.</p>
-      </footer>
+          <div className="landing-section-card card" style={{ background: 'var(--bg-elevated)', border: '3px solid var(--border-color)', borderRadius: 'var(--radius-lg)' }}>
+            <h2 style={{ fontFamily: 'var(--font-title)', fontSize: '1.5rem', marginBottom: '12px' }}>Start practicing today.</h2>
+            <p style={{ fontSize: '0.9rem', marginBottom: '20px', color: 'var(--text-secondary)' }}>Get instant feedback on your communication, vocabulary, and logic.</p>
+            <Link to="/register" className="btn btn-primary btn-lg" style={{ display: 'inline-flex', width: 'auto' }}>
+              Create Free Account <ArrowRight size={18} />
+            </Link>
+          </div>
+
+          <footer className="landing-footer" style={{ padding: '32px 0 0 0', marginTop: '48px', borderTop: '3px solid var(--border-color)', textAlign: 'center' }}>
+            <p>© {new Date().getFullYear()} Eloquo. All rights reserved.</p>
+          </footer>
+        </main>
+      </div>
     </div>
   );
 }

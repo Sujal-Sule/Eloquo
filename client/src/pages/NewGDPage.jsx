@@ -3,13 +3,16 @@ import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import api from '../services/api';
 import toast from 'react-hot-toast';
-import { Shuffle, PenLine, Zap, Clock, Users, Brain, Play, ArrowLeft, Loader2 } from 'lucide-react';
+import { 
+  Shuffle, PenLine, Zap, Clock, Users, Brain, Play, ArrowLeft, Loader2, 
+  Smile, Flame, Search, MessageSquare, Handshake, Target, Crown, User, Cpu 
+} from 'lucide-react';
 import './NewGDPage.css';
 
 const DIFFICULTIES = [
-  { id: 'easy', label: 'Easy', desc: 'Relaxed pace, simple vocabulary', icon: '🌱' },
-  { id: 'medium', label: 'Medium', desc: 'Balanced discussion', icon: '⚡' },
-  { id: 'hard', label: 'Hard', desc: 'Fast-paced, strong counterarguments', icon: '🔥' }
+  { id: 'easy', label: 'Easy', desc: 'Relaxed pace, simple vocabulary' },
+  { id: 'medium', label: 'Medium', desc: 'Balanced discussion' },
+  { id: 'hard', label: 'Hard', desc: 'Fast-paced, strong counterarguments' }
 ];
 
 const DURATIONS = [
@@ -19,12 +22,42 @@ const DURATIONS = [
 ];
 
 const PERSONALITIES = [
-  { id: 'analyst', name: 'Zara Iyer', role: 'Analyst', desc: 'Uses facts and logic', icon: '🔬' },
-  { id: 'challenger', name: 'Kabir Verma', role: 'Challenger', desc: 'Questions assumptions', icon: '⚔️' },
-  { id: 'supporter', name: 'Aisha Nair', role: 'Supporter', desc: 'Builds on ideas', icon: '🤝' },
-  { id: 'moderator', name: 'Reyansh Joshi', role: 'Moderator', desc: 'Guides discussion', icon: '🎯' },
-  { id: 'dominator', name: 'Rudra Thakur', role: 'Dominator', desc: 'Strong opinions', icon: '👑' }
+  { id: 'analyst', name: 'Zara Iyer', role: 'Analyst', desc: 'Uses facts and logic' },
+  { id: 'challenger', name: 'Kabir Verma', role: 'Challenger', desc: 'Questions assumptions' },
+  { id: 'supporter', name: 'Aisha Nair', role: 'Supporter', desc: 'Builds on ideas' },
+  { id: 'moderator', name: 'Reyansh Joshi', role: 'Moderator', desc: 'Guides discussion' },
+  { id: 'dominator', name: 'Rudra Thakur', role: 'Dominator', desc: 'Strong opinions' }
 ];
+
+const getDifficultyIcon = (id) => {
+  switch (id) {
+    case 'easy':
+      return <Smile size={28} style={{ color: '#059669' }} />;
+    case 'medium':
+      return <Zap size={28} style={{ color: '#D97706' }} />;
+    case 'hard':
+      return <Flame size={28} style={{ color: '#DC2626' }} />;
+    default:
+      return null;
+  }
+};
+
+const getPersonalityIcon = (id) => {
+  switch (id) {
+    case 'analyst':
+      return <Search size={28} style={{ color: '#2563EB' }} />;
+    case 'challenger':
+      return <MessageSquare size={28} style={{ color: '#D97706' }} />;
+    case 'supporter':
+      return <Handshake size={28} style={{ color: '#059669' }} />;
+    case 'moderator':
+      return <Target size={28} style={{ color: '#8B5CF6' }} />;
+    case 'dominator':
+      return <Crown size={28} style={{ color: '#DC2626' }} />;
+    default:
+      return null;
+  }
+};
 
 export default function NewGDPage() {
   const navigate = useNavigate();
@@ -105,7 +138,7 @@ export default function NewGDPage() {
   return (
     <div className="page-container">
       <div className="newgd-header animate-fadeIn">
-        <button className="btn btn-ghost" onClick={() => navigate('/dashboard')}><ArrowLeft size={18} /> Back</button>
+        <button className="btn btn-secondary" onClick={() => navigate('/dashboard')}><ArrowLeft size={18} /> Back</button>
         <h1>Create New GD</h1>
         <span className="step-indicator">Step {step}/6</span>
       </div>
@@ -145,7 +178,7 @@ export default function NewGDPage() {
                     <span className="topic-category badge badge-primary">{t.category}</span>
                   </button>
                 ))}
-                <button className="btn btn-ghost btn-sm" onClick={fetchTopics} style={{ marginTop: 8 }}>
+                <button className="btn btn-shuffle btn-sm" onClick={fetchTopics}>
                   <Shuffle size={14} /> Shuffle Topics
                 </button>
               </div>
@@ -163,7 +196,7 @@ export default function NewGDPage() {
               {DIFFICULTIES.map(d => (
                 <button key={d.id} className={`option-card ${config.difficulty === d.id ? 'selected' : ''}`}
                   onClick={() => setConfig(c => ({ ...c, difficulty: d.id }))}>
-                  <span className="option-icon">{d.icon}</span>
+                  <span className="option-icon">{getDifficultyIcon(d.id)}</span>
                   <span className="option-label">{d.label}</span>
                   <span className="option-desc">{d.desc}</span>
                 </button>
@@ -212,7 +245,7 @@ export default function NewGDPage() {
               {PERSONALITIES.map(p => (
                 <button key={p.id} className={`personality-card ${config.personalities.includes(p.id) ? 'selected' : ''}`}
                   onClick={() => handlePersonalityToggle(p.id)}>
-                  <span className="personality-icon">{p.icon}</span>
+                  <span className="personality-icon">{getPersonalityIcon(p.id)}</span>
                   <span className="personality-name">{p.name}</span>
                   <span className="personality-role">{p.role}</span>
                   <span className="personality-desc">{p.desc}</span>
@@ -229,13 +262,13 @@ export default function NewGDPage() {
             <div className="option-cards">
               <button className={`option-card ${config.startMode === 'user' ? 'selected' : ''}`}
                 onClick={() => setConfig(c => ({ ...c, startMode: 'user' }))}>
-                <span className="option-icon">🙋</span>
+                <span className="option-icon"><User size={28} style={{ color: '#2563EB' }} /></span>
                 <span className="option-label">I'll Start</span>
                 <span className="option-desc">Earn leadership bonus (+25 pts)</span>
               </button>
               <button className={`option-card ${config.startMode === 'ai' ? 'selected' : ''}`}
                 onClick={() => setConfig(c => ({ ...c, startMode: 'ai' }))}>
-                <span className="option-icon">🤖</span>
+                <span className="option-icon"><Cpu size={28} style={{ color: '#8B5CF6' }} /></span>
                 <span className="option-label">Let AI Start</span>
                 <span className="option-desc">Listen first, then join in</span>
               </button>

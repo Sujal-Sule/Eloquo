@@ -35,7 +35,7 @@ export default function RegisterPage() {
     <div className="auth-page">
       <div className="auth-container">
         <Link to="/" className="auth-brand" style={{ display: 'flex', justifyContent: 'center', marginBottom: '8px', borderBottom: 'none' }}>
-          <img src="/logo.svg" alt="Eloquo" className="auth-logo" style={{ width: '200px', height: '200px', margin: '-50px 0' }} />
+          <img src="/logo.svg" alt="Eloquo" className="auth-logo" style={{ width: '150px', height: 'auto', display: 'block', margin: '0 auto' }} />
         </Link>
         <div className="auth-card">
           <h1 className="auth-title">Create your account</h1>
