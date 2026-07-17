@@ -94,11 +94,13 @@ export default function DashboardPage() {
     }));
 
   const dailyData15d = [];
+  let minDateObj = null;
   let maxDateObj = null;
   data?.growthData?.forEach(s => {
     if (!s.score || !s.date) return;
     const dateObj = new Date(s.date);
     if (isNaN(dateObj.getTime())) return;
+    if (!minDateObj || dateObj < minDateObj) minDateObj = dateObj;
     if (!maxDateObj || dateObj > maxDateObj) maxDateObj = dateObj;
   });
 
@@ -107,37 +109,36 @@ export default function DashboardPage() {
     end.setHours(0, 0, 0, 0);
     const start = new Date(end);
     start.setDate(start.getDate() - 14);
-    let current = new Date(start);
-    
+
     const sortedGrowth = [...(data?.growthData || [])]
       .filter(s => s.score > 0 && s.date && !isNaN(new Date(s.date).getTime()))
       .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
 
-    let lastKnownScore = 0;
-    for (const s of sortedGrowth) {
-      const d = new Date(s.date);
-      d.setHours(0, 0, 0, 0);
-      if (d < start) {
-        lastKnownScore = s.score;
-      }
-    }
+    const simStart = minDateObj < start ? minDateObj : start;
+    let currentSim = new Date(simStart);
+    currentSim.setHours(0, 0, 0, 0);
 
-    while (current <= end) {
-      const dateKey = current.toISOString().split('T')[0];
+    let currentScore = 0;
+    while (currentSim <= end) {
+      const dateKey = currentSim.toISOString().split('T')[0];
       const daySessions = sortedGrowth.filter(s => {
         const d = new Date(s.date);
         return d.toISOString().split('T')[0] === dateKey;
       });
 
       if (daySessions.length > 0) {
-        lastKnownScore = Math.max(...daySessions.map(s => s.score));
+        currentScore = Math.max(...daySessions.map(s => s.score));
+      } else {
+        currentScore = Math.max(0, currentScore - 10);
       }
 
-      dailyData15d.push({
-        formattedDate: current.toLocaleDateString('en-US', { month: 'short', day: 'numeric' }),
-        score: lastKnownScore
-      });
-      current.setDate(current.getDate() + 1);
+      if (currentSim >= start) {
+        dailyData15d.push({
+          formattedDate: currentSim.toLocaleDateString('en-US', { month: 'short', day: 'numeric' }),
+          score: currentScore
+        });
+      }
+      currentSim.setDate(currentSim.getDate() + 1);
     }
   }
 
