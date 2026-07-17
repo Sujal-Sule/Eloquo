@@ -75,29 +75,47 @@ export default function DashboardPage() {
   ];
 
   const aggregatedData = {};
+  let minDateObj = null;
+  let maxDateObj = null;
+
   data?.growthData?.forEach(s => {
     if (!s.score || !s.date) return;
     const dateObj = new Date(s.date);
     if (isNaN(dateObj.getTime())) return;
     const dateKey = dateObj.toISOString().split('T')[0];
+    
+    if (!minDateObj || dateObj < minDateObj) minDateObj = dateObj;
+    if (!maxDateObj || dateObj > maxDateObj) maxDateObj = dateObj;
+
     if (!aggregatedData[dateKey]) {
-      aggregatedData[dateKey] = { maxScore: s.score, dateObj };
+      aggregatedData[dateKey] = s.score;
     } else {
-      if (s.score > aggregatedData[dateKey].maxScore) {
-        aggregatedData[dateKey].maxScore = s.score;
+      if (s.score > aggregatedData[dateKey]) {
+        aggregatedData[dateKey] = s.score;
       }
     }
   });
 
-  const formattedGrowthData = Object.keys(aggregatedData)
-    .sort()
-    .map(key => {
-      const group = aggregatedData[key];
-      return {
-        formattedDate: group.dateObj.toLocaleDateString('en-US', { month: 'short', day: 'numeric' }),
-        score: group.maxScore
-      };
-    });
+  const formattedGrowthData = [];
+  if (minDateObj && maxDateObj) {
+    const current = new Date(minDateObj);
+    current.setHours(0, 0, 0, 0);
+    const end = new Date(maxDateObj);
+    end.setHours(0, 0, 0, 0);
+
+    let lastKnownScore = 0;
+    while (current <= end) {
+      const dateKey = current.toISOString().split('T')[0];
+      if (aggregatedData[dateKey] !== undefined) {
+        lastKnownScore = aggregatedData[dateKey];
+      }
+      formattedGrowthData.push({
+        formattedDate: current.toLocaleDateString('en-US', { month: 'short', day: 'numeric' }),
+        score: lastKnownScore
+      });
+      current.setDate(current.getDate() + 1);
+    }
+  }
 
   const milestonesList = [];
   if (confidence < 41) {
@@ -334,7 +352,7 @@ export default function DashboardPage() {
                   </linearGradient>
                 </defs>
                 <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#E9ECEF" />
-                <XAxis dataKey="formattedDate" tick={{ fill: '#868E96', fontSize: 10 }} axisLine={false} tickLine={false} />
+                <XAxis dataKey="formattedDate" minTickGap={40} tick={{ fill: '#868E96', fontSize: 10 }} axisLine={false} tickLine={false} />
                 <YAxis domain={[0, 100]} tick={{ fill: '#868E96', fontSize: 10 }} axisLine={false} tickLine={false} />
                 <Tooltip
                   contentStyle={{ background: '#FFFFFF', border: '1px solid #E9ECEF', borderRadius: 8, boxShadow: '0 4px 12px rgba(0,0,0,0.015)' }}
